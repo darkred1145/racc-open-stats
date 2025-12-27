@@ -54,15 +54,29 @@ function calculateStats(filteredData) {
     const trainerMap = {};
 
     filteredData.forEach(row => {
-        // 1. Uma Stats
-        if (!umaMap[row.UniqueName]) {
-            umaMap[row.UniqueName] = { name: row.UniqueName, picks: 0, wins: 0, totalShare: 0 };
+        // --- 1. UMA STATS ---
+        if (!umaMap[row.UniqueName]) { 
+            umaMap[row.UniqueName] = { 
+                name: row.UniqueName, 
+                picks: 0, 
+                wins: 0, 
+                totalShare: 0,
+                tourneyWins: 0
+            }; 
         }
         umaMap[row.UniqueName].picks++;
         umaMap[row.UniqueName].wins += row.Wins;
         umaMap[row.UniqueName].totalShare += row.WinShare;
 
-        // 2. Trainer Stats initialization
+        // CHECK: Did this Uma's trainer win this specific tournament?
+        // We look up the tournament ID (row.RawLength) in the global tournamentWinners object
+        if (typeof tournamentWinners !== 'undefined' && tournamentWinners[row.RawLength]) {
+            if (tournamentWinners[row.RawLength].includes(row.Trainer)) {
+                umaMap[row.UniqueName].tourneyWins++;
+            }
+        }
+
+        // --- 2. TRAINER STATS ---
         if (!trainerMap[row.Trainer]) {
             trainerMap[row.Trainer] = {
                 name: row.Trainer,
@@ -70,7 +84,7 @@ function calculateStats(filteredData) {
                 wins: 0,
                 totalShare: 0,
                 characterHistory: {},
-                playedTourneys: new Set(), // Tracks unique tournament IDs
+                playedTourneys: new Set(),
                 tournamentWins: 0
             };
         }
@@ -79,11 +93,8 @@ function calculateStats(filteredData) {
         t.entries++;
         t.wins += row.Wins;
         t.totalShare += row.WinShare;
-        
-        // Track unique tournaments played (e.g. "Open 1")
         t.playedTourneys.add(row.RawLength);
 
-        // Character usage history
         if (!t.characterHistory[row.UniqueName]) {
             t.characterHistory[row.UniqueName] = { picks: 0, wins: 0 };
         }
@@ -91,21 +102,18 @@ function calculateStats(filteredData) {
         t.characterHistory[row.UniqueName].wins += row.Wins;
     });
 
-    // 3. Post-Processing: Calculate Tournament Wins
-    // Uses 'tournamentWinners' from data.js
+    // Post-Process Trainer Wins (Logic remains the same as before)
     Object.values(trainerMap).forEach(t => {
         t.playedTourneys.forEach(tourneyID => {
-            // Safety check: ensure tournamentWinners exists and has this ID
             if (typeof tournamentWinners !== 'undefined' && tournamentWinners[tourneyID]) {
-                const winners = tournamentWinners[tourneyID];
-                if (winners.includes(t.name)) {
+                if (tournamentWinners[tourneyID].includes(t.name)) {
                     t.tournamentWins++;
                 }
             }
         });
     });
 
-    // 4. Formatting for Table Display
+    // --- FORMATTING ---
     const formatStats = (obj, type) => Object.values(obj).map(item => {
         const stats = {
             ...item,
@@ -115,23 +123,21 @@ function calculateStats(filteredData) {
                  : 0
         };
 
+        if (type === 'uma') {
+            const tWinRate = item.picks > 0 ? (item.tourneyWins / item.picks * 100).toFixed(1) : "0.0";
+            stats.tourneyStatsDisplay = `${tWinRate}% <span style="font-size:0.8em; color:#888">(${item.tourneyWins}/${item.picks})</span>`;
+        }
+
         if (type === 'trainer') {
-            // Calculate Tourney Win Rate
             const tourneyCount = item.playedTourneys.size;
-            const tWinRate = tourneyCount > 0 
-                             ? (item.tournamentWins / tourneyCount * 100).toFixed(1) 
-                             : "0.0";
-            
-            // Format: "100.0% (1/1)"
+            const tWinRate = tourneyCount > 0 ? (item.tournamentWins / tourneyCount * 100).toFixed(1) : "0.0";
             stats.tourneyStatsDisplay = `${tWinRate}% <span style="font-size:0.8em; color:#888">(${item.tournamentWins}/${tourneyCount})</span>`;
 
-            // Favorite Char
             const historyArr = Object.entries(item.characterHistory).map(([key, val]) => ({ name: key, ...val }));
             historyArr.sort((a, b) => b.picks - a.picks);
             const fav = historyArr[0];
             stats.favorite = fav ? `${formatName(fav.name)} <span class="stat-badge">x${fav.picks}</span>` : '-';
 
-            // Ace Char
             historyArr.sort((a, b) => b.wins - a.wins || a.picks - b.picks);
             const best = historyArr[0];
             stats.ace = (best && best.wins > 0) ? `${formatName(best.name)} <span class="stat-badge win-badge">★${best.wins}</span>` : '<span style="color:#666">-</span>';
@@ -213,18 +219,17 @@ function updateData() {
 
     const stats = calculateStats(filtered);
 
-    // Render Uma Table
     stats.umaStats.sort((a, b) => b.dom - a.dom);
-    renderTable('umaTable', stats.umaStats, ['name', 'picks', 'wins', 'dom']);
+    renderTable('umaTable', stats.umaStats, 
+        ['name', 'picks', 'wins', 'dom', 'tourneyStatsDisplay']
+    );
 
     // Render Trainer Table
     stats.trainerStats.sort((a, b) => b.dom - a.dom);
-    // Updated columns to include 'tourneyStatsDisplay'
     renderTable('trainerTable', stats.trainerStats, 
         ['name', 'entries', 'wins', 'dom', 'tourneyStatsDisplay', 'favorite', 'ace']
     );
 
-    // Render Tier Lists
     renderTierList('umaTierList', stats.umaStats, 'picks', minEntries);
     renderTierList('trainerTierList', stats.trainerStats, 'entries', minEntries);
 }
@@ -273,4 +278,5 @@ window.onload = function() {
     }
 
     updateData();
+
 };
