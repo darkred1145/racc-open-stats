@@ -39,6 +39,30 @@ function switchTab(tabId) {
     if (tabId === 'championship') tabs[3].classList.add('active');
 }
 
+// --- Tier List View Switcher (Slider Logic) ---
+function setTierView(index) {
+    // 1. Update Buttons
+    const buttons = document.querySelectorAll('.switch-option');
+    buttons.forEach((btn, i) => {
+        if (i === index) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+
+    // 2. Move Glider
+    const glider = document.getElementById('tierGlider');
+    if(glider) glider.style.transform = `translateX(${index * 100}%)`;
+
+    // 3. Show Correct View
+    const views = ['view-wr', 'view-dom', 'view-champ'];
+    views.forEach((viewId, i) => {
+        const el = document.getElementById(viewId);
+        if(el) {
+            if (i === index) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+    });
+}
+
 // --- Formatting Helper ---
 function formatName(fullName) {
     if (!fullName.includes('(')) return fullName;
@@ -48,12 +72,12 @@ function formatName(fullName) {
     return `${mainName} <span class="variant-tag">(${variant})</span>`;
 }
 
-// --- NEW: Calculate Points (Filtered) ---
+// --- NEW: Calculate Points (Respects Filters & Links Umas) ---
 function getChampionshipPoints(activeTournaments, filteredData) {
     let stats = { trainer: {}, uma: {} };
     
     // 1. Create a Map to link Trainer+Tourney -> UmaName
-    // This allows us to assign points from the race results (which only have Trainer names) to the specific Uma.
+    // This connects the race results (Trainer Name) to the correct Uma
     const lookupMap = {};
     filteredData.forEach(row => {
         const key = `${row.RawLength}_${row.Trainer}`;
@@ -62,7 +86,7 @@ function getChampionshipPoints(activeTournaments, filteredData) {
 
     // 2. Iterate detailed race results
     for (const [tournamentName, stages] of Object.entries(tournamentRaceResults)) {
-        // FILTER CHECK: Only process this tournament if it passed the filters
+        // FILTER FIX: If tournament isn't in our filtered list (e.g. Surface=Dirt), skip it
         if (!activeTournaments.has(tournamentName)) continue;
 
         for (const [stageName, races] of Object.entries(stages)) {
@@ -70,7 +94,7 @@ function getChampionshipPoints(activeTournaments, filteredData) {
                 raceResult.forEach((player, rankIndex) => {
                     if(player.includes("Player")) return; 
 
-                    // --- Process Trainer Points ---
+                    // --- A. Process Trainer Points ---
                     if (!stats.trainer[player]) {
                         stats.trainer[player] = { points: 0, races: 0 };
                     }
@@ -79,7 +103,7 @@ function getChampionshipPoints(activeTournaments, filteredData) {
                     }
                     stats.trainer[player].races += 1;
 
-                    // --- Process Uma Points (via Lookup) ---
+                    // --- B. Process Uma Points (via Lookup) ---
                     const key = `${tournamentName}_${player}`;
                     const umaName = lookupMap[key];
                     
@@ -107,7 +131,7 @@ function calculateStats(filteredData) {
     
     filteredData.forEach(row => activeTournaments.add(row.RawLength));
 
-    // 1. Get Points Data (Now respects Filters & calculates Uma points)
+    // 1. Get Points Data (Using the new Filter-Aware function)
     const pointsData = getChampionshipPoints(activeTournaments, filteredData);
 
     // 2. Process Basic Data
@@ -194,7 +218,7 @@ function calculateStats(filteredData) {
         const pStats = type === 'trainer' ? pointsData.trainer[item.name] : pointsData.uma[item.name];
         
         if (pStats && pStats.races > 0) {
-            const maxPoints = pStats.races * 25;
+            const maxPoints = pStats.races * 25; // 25 is max points per race
             dominanceVal = ((pStats.points / maxPoints) * 100).toFixed(1);
         }
 
@@ -215,7 +239,6 @@ function calculateStats(filteredData) {
             tourneyWinPct: tWinPct
         };
 
-        // Specific fields
         if (type === 'uma') {
             stats.tourneyStatsDisplay = `${tWinPct}% <span style="font-size:0.8em; color:#888">(${item.tourneyWins}/${item.picks})</span>`;
             const banRate = validBanTourneyCount > 0 ? (item.bans / validBanTourneyCount * 100).toFixed(1) : "0.0";
@@ -245,6 +268,7 @@ function calculateStats(filteredData) {
 // --- Render Functions ---
 function renderTable(tableId, data, columns) {
     const tbody = document.querySelector(`#${tableId} tbody`);
+    if (!tbody) return;
     tbody.innerHTML = data.map(row => {
         const cells = columns.map(col => {
             if (col === 'name') return `<td>${row.displayName}</td>`;
@@ -262,31 +286,37 @@ function renderTierList(containerId, data, countKey, minReq, sortKey) {
     data.forEach(item => {
         if (item[countKey] < minReq) return;
 
-        const val = parseFloat(item[sortKey]); // Use sortKey (dom, winRate, or tourneyWinPct)
+        const val = parseFloat(item[sortKey]); 
         let tier = 'D';
         
-        // Dynamic thresholds based on sortKey could be added here
-        // Using a general scale for now
-        if (val <= 5.0) tier = 'F';
-        else if (val >= 60.0) tier = 'S'; 
-        else if (val >= 45.0) tier = 'A';
-        else if (val >= 30.0) tier = 'B';
-        else if (val >= 15.0) tier = 'C';
-
-        // Adjust thresholds for WinRate specifically if needed (since WR is harder to get than Dom pts)
+        // Thresholds based on metrics
         if (sortKey === 'winRate') {
              if (val <= 1.0) tier = 'F';
              else if (val >= 25.0) tier = 'S'; 
              else if (val >= 15.0) tier = 'A';
              else if (val >= 10.0) tier = 'B';
              else if (val >= 5.0) tier = 'C';
-             else tier = 'D';
+        } else if (sortKey === 'tourneyWinPct') {
+             if (val <= 0.0) tier = 'F';
+             else if (val >= 25.0) tier = 'S';
+             else if (val >= 15.0) tier = 'A';
+             else if (val >= 10.0) tier = 'B';
+             else if (val >= 5.0) tier = 'C';
+        } else {
+            // Default Dominance (Points)
+            if (val <= 5.0) tier = 'F';
+            else if (val >= 60.0) tier = 'S'; 
+            else if (val >= 45.0) tier = 'A';
+            else if (val >= 30.0) tier = 'B';
+            else if (val >= 15.0) tier = 'C';
         }
 
         tiers[tier].push(item);
     });
 
     const container = document.getElementById(containerId);
+    if (!container) return;
+    
     let html = '';
 
     ['S', 'A', 'B', 'C', 'D', 'F'].forEach(tier => {
@@ -320,7 +350,7 @@ function updateData() {
 
     const stats = calculateStats(filtered);
 
-    // Sort Tables by Dominance Default
+    // Sort Tables
     stats.umaStats.sort((a, b) => b.dom - a.dom);
     renderTable('umaTable', stats.umaStats, 
         ['name', 'picks', 'wins', 'winRate', 'dom', 'tourneyStatsDisplay', 'banStatsDisplay']
@@ -332,16 +362,12 @@ function updateData() {
     );
 
     // --- Render the 3 Separate Tier Lists ---
-    
-    // 1. Win Rate Lists
     renderTierList('umaTierListWR', stats.umaStats, 'picks', minEntries, 'winRate');
     renderTierList('trainerTierListWR', stats.trainerStats, 'entries', minEntries, 'winRate');
 
-    // 2. Dominance Lists
     renderTierList('umaTierListDom', stats.umaStats, 'picks', minEntries, 'dom');
     renderTierList('trainerTierListDom', stats.trainerStats, 'entries', minEntries, 'dom');
 
-    // 3. Tourney Win Lists
     renderTierList('umaTierListChamp', stats.umaStats, 'picks', minEntries, 'tourneyWinPct');
     renderTierList('trainerTierListChamp', stats.trainerStats, 'entries', minEntries, 'tourneyWinPct');
 }
@@ -379,7 +405,7 @@ function switchTheme() {
     }
 }
 
-// This function now just renders the raw total points table (unfiltered, for the Championship tab)
+// Calculate total unfiltered stats for the Championship Tab
 function calculateIndividualStats() {
     let stats = {};
     for (const [tournamentName, stages] of Object.entries(tournamentRaceResults)) {
