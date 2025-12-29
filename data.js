@@ -4314,9 +4314,48 @@ const tournamentRaceResults = {
         ]
     },
 	
-	// Open 18-19 (Data not provided yet)
+	// Open 18 (Data not provided yet)
     "Open 18": { "Finals": [] },
-    "Open 19": { "Finals": [] },
+	
+    // Open 19
+    "Open 19": {
+        "Group A": [
+            // Race 1
+            ["Sumpfranze", "Alfheix", "Viistar", "HoriYon", "NarrativeCrocodiles", "Spyder", "FuHua", "Raccoon", "Divine"],
+            // Race 2
+            ["HoriYon", "Sumpfranze", "Alfheix", "FuHua", "Spyder", "Viistar", "Raccoon", "Divine", "NarrativeCrocodiles"],
+            // Race 3
+            ["HoriYon", "Alfheix", "Divine", "Viistar", "Spyder", "NarrativeCrocodiles", "Sumpfranze", "FuHua", "Raccoon"],
+            // Race 4
+            ["Alfheix", "Sumpfranze", "Divine", "Spyder", "HoriYon", "Raccoon", "FuHua", "Viistar", "NarrativeCrocodiles"],
+            // Race 5
+            ["HoriYon", "Alfheix", "Divine", "Sumpfranze", "Raccoon", "FuHua", "Spyder", "NarrativeCrocodiles", "Viistar"]
+        ],
+        "Group B": [
+            // Race 1
+            ["Jedmumu", "Pines", "Merlin", "Boop", "Minty", "Dedratermi", "Rihito", "Kenesu", "Cefiro"],
+            // Race 2
+            ["Boop", "Rihito", "Minty", "Kenesu", "Pines", "Jedmumu", "Dedratermi", "Merlin", "Cefiro"],
+            // Race 3
+            ["Jedmumu", "Pines", "Boop", "Rihito", "Cefiro", "Merlin", "Dedratermi", "Minty", "Kenesu"],
+            // Race 4
+            ["Jedmumu", "Rihito", "Boop", "Pines", "Kenesu", "Cefiro", "Minty", "Merlin", "Dedratermi"],
+            // Race 5
+            ["Jedmumu", "Pines", "Rihito", "Cefiro", "Boop", "Kenesu", "Merlin", "Minty", "Dedratermi"]
+        ],
+        "Finals": [
+            // Race 1
+            ["HoriYon", "Merlin", "Jedmumu", "Alfheix", "Rihito", "Divine", "FuHua", "Sumpfranze", "NarrativeCrocodiles"],
+            // Race 2
+            ["HoriYon", "Rihito", "Sumpfranze", "Alfheix", "Merlin", "FuHua", "Jedmumu", "Divine", "NarrativeCrocodiles"],
+            // Race 3
+            ["HoriYon", "Rihito", "Alfheix", "Jedmumu", "Merlin", "Sumpfranze", "Divine", "FuHua", "NarrativeCrocodiles"],
+            // Race 4
+            ["Sumpfranze", "Jedmumu", "Rihito", "Alfheix", "Merlin", "FuHua", "Divine", "HoriYon", "NarrativeCrocodiles"],
+            // Race 5
+            ["Jedmumu", "HoriYon", "Rihito", "Sumpfranze", "Alfheix", "FuHua", "Merlin", "NarrativeCrocodiles", "Divine"]
+        ]
+    },
 
     // Open 20
     "Open 20": {
@@ -4647,4 +4686,5 @@ const tournamentRaceResults = {
     }
 
 };
+
 
