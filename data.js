@@ -4130,7 +4130,7 @@ const compactData = [
   ["Mixsy", "Tokai Teio (Original)", 0, "2000m Turf (L)", "Open 31", "Tokai Teio", "Original", 5],
   ["Kenesu", "Oguri Cap (Original)", 0, "2000m Turf (L)", "Open 31", "Oguri Cap", "Original", 5],
   ["KN", "Mejiro Dober (Original)", 0, "2000m Turf (L)", "Open 31", "Mejiro Dober", "Original", 5],
-  ["Horiyon", "Oguri Cap (Original)", 0, "2000m Turf (L)", "Open 31", "Oguri Cap", "Original", 5],
+  ["HoriYon", "Oguri Cap (Original)", 0, "2000m Turf (L)", "Open 31", "Oguri Cap", "Original", 5],
   ["Minty", "Tokai Teio (Anime)", 0, "2000m Turf (L)", "Open 31", "Tokai Teio", "Anime", 5],
 
   ["Roidee", "Grass Wonder (Original)", 5, "1800m Turf (R)", "Open 32", "Grass Wonder", "Original", 10],
@@ -4871,15 +4871,15 @@ const tournamentRaceResults = {
     "Open 31": {
         "Finals": [
             // Race 1
-            ["FuHua", "Mixsy", "Bunsen", "Sumpfranze", "Roidee", "Pines", "Kenesu", "KN", "Raccoon", "Boop", "Horiyon", "Minty"],
+            ["FuHua", "Mixsy", "Bunsen", "Sumpfranze", "Roidee", "Pines", "Kenesu", "KN", "Raccoon", "Boop", "HoriYon", "Minty"],
             // Race 2
-            ["Roidee", "FuHua", "Pines", "Raccoon", "Bunsen", "Sumpfranze", "Horiyon", "Mixsy", "Boop", "KN", "Kenesu", "Minty"],
+            ["Roidee", "FuHua", "Pines", "Raccoon", "Bunsen", "Sumpfranze", "HoriYon", "Mixsy", "Boop", "KN", "Kenesu", "Minty"],
             // Race 3
-            ["FuHua", "Kenesu", "Horiyon", "Bunsen", "Roidee", "Mixsy", "Boop", "Sumpfranze", "Pines", "KN", "Raccoon", "Minty"],
+            ["FuHua", "Kenesu", "HoriYon", "Bunsen", "Roidee", "Mixsy", "Boop", "Sumpfranze", "Pines", "KN", "Raccoon", "Minty"],
             // Race 4
-            ["Raccoon", "Sumpfranze", "Bunsen", "FuHua", "Pines", "Boop", "Mixsy", "Kenesu", "KN", "Roidee", "Horiyon", "Minty"],
+            ["Raccoon", "Sumpfranze", "Bunsen", "FuHua", "Pines", "Boop", "Mixsy", "Kenesu", "KN", "Roidee", "HoriYon", "Minty"],
             // Race 5
-            ["Boop", "Sumpfranze", "Bunsen", "Horiyon", "FuHua", "Kenesu", "Pines", "Raccoon", "Roidee", "Mixsy", "KN", "Minty"]
+            ["Boop", "Sumpfranze", "Bunsen", "HoriYon", "FuHua", "Kenesu", "Pines", "Raccoon", "Roidee", "Mixsy", "KN", "Minty"]
         ]
     },
 
@@ -4887,15 +4887,15 @@ const tournamentRaceResults = {
     "Open 32": {
         "Group A": [
             // Race 1
-            ["Keejo", "Cefiro", "Dedratermi", "Synocra", "Raccoon", "Draguin", "Pines", "Horiyon", "Mixsy"],
+            ["Keejo", "Cefiro", "Dedratermi", "Synocra", "Raccoon", "Draguin", "Pines", "HoriYon", "Mixsy"],
             // Race 2
-            ["Draguin", "Horiyon", "Pines", "Cefiro", "Keejo", "Dedratermi", "Mixsy", "Synocra", "Raccoon"],
+            ["Draguin", "HoriYon", "Pines", "Cefiro", "Keejo", "Dedratermi", "Mixsy", "Synocra", "Raccoon"],
             // Race 3
-            ["Keejo", "Cefiro", "Mixsy", "Raccoon", "Pines", "Draguin", "Horiyon", "Dedratermi", "Synocra"],
+            ["Keejo", "Cefiro", "Mixsy", "Raccoon", "Pines", "Draguin", "HoriYon", "Dedratermi", "Synocra"],
             // Race 4
-            ["Cefiro", "Pines", "Synocra", "Horiyon", "Mixsy", "Draguin", "Keejo", "Dedratermi", "Raccoon"],
+            ["Cefiro", "Pines", "Synocra", "HoriYon", "Mixsy", "Draguin", "Keejo", "Dedratermi", "Raccoon"],
             // Race 5
-            ["Keejo", "Synocra", "Raccoon", "Dedratermi", "Cefiro", "Mixsy", "Draguin", "Pines", "Horiyon"]
+            ["Keejo", "Synocra", "Raccoon", "Dedratermi", "Cefiro", "Mixsy", "Draguin", "Pines", "HoriYon"]
         ],
         "Group B": [
             // Race 1
@@ -4923,4 +4923,5 @@ const tournamentRaceResults = {
         ]
     }
 };
+
 
