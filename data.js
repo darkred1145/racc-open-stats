@@ -4099,26 +4099,26 @@ const compactData = [
   ["Pines", "Mihono Bourbon (Original)", 0, "2300m Turf (L)", "Open 30", "Mihono Bourbon", "Original", 5],
   ["Bunsen", "Silence Suzuka (Original)", 0, "2300m Turf (L)", "Open 30", "Silence Suzuka", "Original", 5],
 
-  ["Sumpfranze", "Mihono Bourbon (Original)", 2, "1800m Turf (R)", "Open 31", "Mihono Bourbon", "Original", 10],
-  ["Kenesu", "Vodka (Original)", 1, "1800m Turf (R)", "Open 31", "Vodka", "Original", 10],
-  ["Boop", "Mejiro Dober (Original)", 2, "1800m Turf (R)", "Open 31", "Mejiro Dober", "Original", 10],
-  ["Mixsy", "Grass Wonder (Original)", 4, "1800m Turf (R)", "Open 31", "Grass Wonder", "Original", 10],
-  ["Roidee", "Special Week (Original)", 2, "1800m Turf (R)", "Open 31", "Special Week", "Original", 10],
-  ["Draguin", "Mejiro Dober (Original)", 1, "1800m Turf (R)", "Open 31", "Mejiro Dober", "Original", 10],
-  ["Teki", "Vodka (Original)", 0, "1800m Turf (R)", "Open 31", "Vodka", "Original", 10],
-  ["Pines", "Fuji Kiseki (Original)", 0, "1800m Turf (R)", "Open 31", "Fuji Kiseki", "Original", 10],
-  ["DQ", "Taiki Shuttle (Original)", 0, "1800m Turf (R)", "Open 31", "Taiki Shuttle", "Original", 5],
+  ["Sumpfranze", "Mihono Bourbon (Original)", 2, "1800m Turf (R)", "Unofficial 1", "Mihono Bourbon", "Original", 10],
+  ["Kenesu", "Vodka (Original)", 1, "1800m Turf (R)", "Unofficial 1", "Vodka", "Original", 10],
+  ["Boop", "Mejiro Dober (Original)", 2, "1800m Turf (R)", "Unofficial 1", "Mejiro Dober", "Original", 10],
+  ["Mixsy", "Grass Wonder (Original)", 4, "1800m Turf (R)", "Unofficial 1", "Grass Wonder", "Original", 10],
+  ["Roidee", "Special Week (Original)", 2, "1800m Turf (R)", "Unofficial 1", "Special Week", "Original", 10],
+  ["Draguin", "Mejiro Dober (Original)", 1, "1800m Turf (R)", "Unofficial 1", "Mejiro Dober", "Original", 10],
+  ["Teki", "Vodka (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Vodka", "Original", 10],
+  ["Pines", "Fuji Kiseki (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Fuji Kiseki", "Original", 10],
+  ["DQ", "Taiki Shuttle (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Taiki Shuttle", "Original", 5],
 
-  ["Zixen", "Taiki Shuttle (Original)", 0, "1800m Turf (R)", "Open 31", "Taiki Shuttle", "Original", 5],
-  ["Synocra", "Sakura Bakushin O (Original)", 0, "1800m Turf (R)", "Open 31", "Sakura Bakushin O", "Original", 5],
-  ["Raccoon", "Mayano Top Gun (Wedding)", 0, "1800m Turf (R)", "Open 31", "Mayano Top Gun", "Wedding", 5],
-  ["MetaHayato", "Mejiro Dober (Original)", 0, "1800m Turf (R)", "Open 31", "Mejiro Dober", "Original", 5],
-  ["Cefiro", "Mejiro Dober (Original)", 1, "1800m Turf (R)", "Open 31", "Mejiro Dober", "Original", 5],
-  ["HoriYon", "Grass Wonder (Original)", 0, "1800m Turf (R)", "Open 31", "Grass Wonder", "Original", 5],
-  ["JoeWheeler", "Mejiro Ryan (Original)", 0, "1800m Turf (R)", "Open 31", "Mejiro Ryan", "Original", 5],
-  ["Jedmumu", "Fuji Kiseki (Original)", 0, "1800m Turf (R)", "Open 31", "Fuji Kiseki", "Original", 5],
-  ["FuHua", "Hishi Akebono (Original)", 0, "1800m Turf (R)", "Open 31", "Hishi Akebono", "Original", 5],
-  ["Spyder", "Mihono Bourbon (Original)", 0, "1800m Turf (R)", "Open 31", "Mihono Bourbon", "Original", 5]
+  ["Zixen", "Taiki Shuttle (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Taiki Shuttle", "Original", 5],
+  ["Synocra", "Sakura Bakushin O (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Sakura Bakushin O", "Original", 5],
+  ["Raccoon", "Mayano Top Gun (Wedding)", 0, "1800m Turf (R)", "Unofficial 1", "Mayano Top Gun", "Wedding", 5],
+  ["MetaHayato", "Mejiro Dober (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Mejiro Dober", "Original", 5],
+  ["Cefiro", "Mejiro Dober (Original)", 1, "1800m Turf (R)", "Unofficial 1", "Mejiro Dober", "Original", 5],
+  ["HoriYon", "Grass Wonder (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Grass Wonder", "Original", 5],
+  ["JoeWheeler", "Mejiro Ryan (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Mejiro Ryan", "Original", 5],
+  ["Jedmumu", "Fuji Kiseki (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Fuji Kiseki", "Original", 5],
+  ["FuHua", "Hishi Akebono (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Hishi Akebono", "Original", 5],
+  ["Spyder", "Mihono Bourbon (Original)", 0, "1800m Turf (R)", "Unofficial 1", "Mihono Bourbon", "Original", 5]
 ];
 
 const tournamentWinners = {
@@ -4151,7 +4151,7 @@ const tournamentWinners = {
     "Open 28": ["Frozt", "FuHua", "Bunsen"],
 	"Open 29": ["Boop", "FuHua", "MetaHayato"],
 	"Open 30": ["MetaHayato", "Spyder", "FuHua"],
-	"Open 31": ["Sumpfranze", "Kenesu", "Boop"]
+	"Unofficial 1": ["Sumpfranze", "Kenesu", "Boop"]
 };
 const tournamentBans = {
     "Open 7": [
@@ -4292,7 +4292,7 @@ const tournamentBans = {
         "Seiun Sky (Original)",
         "Maruzensky (Original)"
     ],
-	"Open 31": [
+	"Unofficial 1": [
         "Maruzensky (Summer)",
         "Silence Suzuka (Original)",
         "Seiun Sky (Original)",
@@ -4778,8 +4778,8 @@ const tournamentRaceResults = {
         ]
     },
 
-	// Open 31
-    "Open 31": {
+	// Unofficial 1
+    "Unofficial 1": {
         "Group A": [
             // Race 1
             ["Mixsy", "Zixen", "Synocra", "Teki", "Draguin", "Roidee", "Pines", "Raccoon", "MetaHayato"],
@@ -4818,3 +4818,4 @@ const tournamentRaceResults = {
         ]
     }
 };
+
