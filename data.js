@@ -4138,16 +4138,16 @@ const compactData = [
   ["Cefiro", "Tokai Teio (Anime)", 2, "1800m Turf (R)", "Open 32", "Tokai Teio", "Anime", 10],
   ["FuHua", "Hishi Akebono (Original)", 1, "1800m Turf (R)", "Open 32", "Hishi Akebono", "Original", 10],
   ["Bunsen", "Daiwa Scarlet (Original)", 0, "1800m Turf (R)", "Open 32", "Daiwa Scarlet", "Original", 10],
-  ["Keejo", "Gold Ship (Original)", 2, "1800m Turf (R)", "Open 32", "Gold Ship", "Original", 10],
+  ["Keejo", "Gold Ship (Original)", 3, "1800m Turf (R)", "Open 32", "Gold Ship", "Original", 10],
   ["Jedmumu", "Tokai Teio (Anime)", 1, "1800m Turf (R)", "Open 32", "Tokai Teio", "Anime", 10],
-  ["Kenesu", "Nice Nature (Original)", 1, "1800m Turf (R)", "Open 32", "Nice Nature", "Original", 10],
+  ["Kenesu", "Nice Nature (Original)", 0, "1800m Turf (R)", "Open 32", "Nice Nature", "Original", 10],
   ["Sumpfranze", "Vodka (Original)", 2, "1800m Turf (R)", "Open 32", "Vodka", "Original", 10],
 
   ["Draguin", "Oguri Cap (Original)", 1, "1800m Turf (R)", "Open 32", "Oguri Cap", "Original", 5],
   ["Dedratermi", "Special Week (Original)", 0, "1800m Turf (R)", "Open 32", "Special Week", "Original", 5],
   ["Synocra", "Grass Wonder (Original)", 0, "1800m Turf (R)", "Open 32", "Grass Wonder", "Original", 5],
   ["Raccoon", "Sakura Bakushin O (Original)", 0, "1800m Turf (R)", "Open 32", "Sakura Bakushin O", "Original", 5],
-  ["Horiyon", "Oguri Cap (Original)", 0, "1800m Turf (R)", "Open 32", "Oguri Cap", "Original", 5],
+  ["HoriYon", "Oguri Cap (Original)", 0, "1800m Turf (R)", "Open 32", "Oguri Cap", "Original", 5],
   ["Mixsy", "Grass Wonder (Original)", 0, "1800m Turf (R)", "Open 32", "Grass Wonder", "Original", 5],
   ["Frozt", "Daiwa Scarlet (Original)", 0, "1800m Turf (R)", "Open 32", "Daiwa Scarlet", "Original", 5],
   ["Boop", "Mihono Bourbon (Original)", 0, "1800m Turf (R)", "Open 32", "Mihono Bourbon", "Original", 5],
@@ -4923,3 +4923,4 @@ const tournamentRaceResults = {
         ]
     }
 };
+
