@@ -1,10 +1,17 @@
 // --- GLOBAL VARIABLES ---
-const POINTS_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]; 
+const POINTS_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 
-let currentRawData = []; 
-let activeDataset = null; 
+const EMPTY_DATASET = {
+    compactData: [],
+    tournamentRaceResults: {},
+    tournamentWinners: {},
+    tournamentBans: {}
+};
+
+let currentRawData = [];
+let activeDataset = null;
 let liveFirebaseData = [];
-let currentCalculatedStats = null; 
+let currentCalculatedStats = null;
 
 // --- Helper: Generate Icon HTML ---
 function getIconHtml(name, type) {
@@ -46,6 +53,31 @@ function getOrdinal(n) {
     const s = ["th", "st", "nd", "rd"];
     const v = n % 100;
     return s[(v - 20) % 10] || s[v] || s[0];
+}
+
+function withButtonLoading(button, loadingText) {
+    if (!button) return () => {};
+
+    const originalState = {
+        html: button.innerHTML,
+        disabled: button.disabled,
+        opacity: button.style.opacity
+    };
+
+    button.innerHTML = loadingText;
+    button.disabled = true;
+    button.style.opacity = "0.7";
+
+    return () => {
+        button.innerHTML = originalState.html;
+        button.disabled = originalState.disabled;
+        button.style.opacity = originalState.opacity;
+    };
+}
+
+function safeSetHtml(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.innerHTML = value;
 }
 
 // --- Helper: Distance Category ---
@@ -243,7 +275,12 @@ function copyTournamentResults(tournamentId) {
         }
     });
 
-    navigator.clipboard.writeText(text.trim()).then(() => alert("Results copied to clipboard!")).catch(err => alert("Failed to copy. See console."));
+    navigator.clipboard.writeText(text.trim())
+        .then(() => alert("Results copied to clipboard!"))
+        .catch(err => {
+            console.error("Clipboard copy failed:", err);
+            alert("Failed to copy. See console.");
+        });
 }
 
 // --- SEASON SWITCHER LOGIC ---
@@ -252,8 +289,8 @@ function switchSeason() {
     if (!seasonEl) return;
     const season = seasonEl.value;
     
-    const s1 = typeof S1_DATA !== 'undefined' ? S1_DATA : { compactData: [], tournamentRaceResults: {}, tournamentWinners: {}, tournamentBans: {} };
-    const s2 = typeof S2_DATA !== 'undefined' ? S2_DATA : { compactData: [], tournamentRaceResults: {}, tournamentWinners: {}, tournamentBans: {} };
+    const s1 = typeof S1_DATA !== 'undefined' ? S1_DATA : EMPTY_DATASET;
+    const s2 = typeof S2_DATA !== 'undefined' ? S2_DATA : EMPTY_DATASET;
 
     if (season === 's1') {
         activeDataset = s1;
@@ -871,19 +908,26 @@ function updateTrainerCard() {
     if (!tData) return;
 
     // Head Data
-    document.getElementById('tc-name').innerText = tData.name;
-    document.getElementById('tc-avatar').innerHTML = getIconHtml(tData.name, 'trainer');
-    
+    const tcName = document.getElementById('tc-name');
+    const tcWr = document.getElementById('tc-wr');
+    const tcAvgPos = document.getElementById('tc-avg-pos');
+    const tcVolatility = document.getElementById('tc-volatility');
+    const tcDom = document.getElementById('tc-dom');
+    const tcTwins = document.getElementById('tc-twins');
+
+    if (tcName) tcName.innerText = tData.name;
+    safeSetHtml('tc-avatar', getIconHtml(tData.name, 'trainer'));
+
     // Grid Data
-    document.getElementById('tc-wr').innerText = `${tData.winRate}%`;
-    document.getElementById('tc-avg-pos').innerText = tData.avgPos;
-    document.getElementById('tc-volatility').innerText = tData.volatility;
-    document.getElementById('tc-dom').innerText = `${tData.dom}%`;
-    document.getElementById('tc-twins').innerText = tData.tournamentWins;
+    if (tcWr) tcWr.innerText = `${tData.winRate}%`;
+    if (tcAvgPos) tcAvgPos.innerText = tData.avgPos;
+    if (tcVolatility) tcVolatility.innerText = tData.volatility;
+    if (tcDom) tcDom.innerText = `${tData.dom}%`;
+    if (tcTwins) tcTwins.innerText = tData.tournamentWins;
 
     // Favorites
-    document.getElementById('tc-ace').innerHTML = tData.ace;
-    document.getElementById('tc-fav').innerHTML = tData.favorite;
+    safeSetHtml('tc-ace', tData.ace);
+    safeSetHtml('tc-fav', tData.favorite);
 
     // --- UMAS LIST (Best to Worst Avg Score & Dom%) ---
     const umasObj = tData.detailedUmaStats || {};
@@ -946,20 +990,18 @@ function downloadTrainerCard() {
     
     const trainerName = selector.value;
     const btn = document.querySelector('button[onclick="downloadTrainerCard()"]');
-    const originalText = btn.innerHTML;
-    
-    btn.innerHTML = "⏳ Generating..."; btn.style.opacity = "0.7"; btn.disabled = true;
-    
+    const resetButton = withButtonLoading(btn, "⏳ Generating...");
+
     html2canvas(cardElement, { useCORS: true, backgroundColor: null, scale: 2, logging: false }).then(canvas => {
         const link = document.createElement('a');
         link.download = `${trainerName}_Racc_Open_Stats.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
-        btn.innerHTML = originalText; btn.style.opacity = "1"; btn.disabled = false;
+        resetButton();
     }).catch(err => {
         console.error("Card generation failed:", err);
         alert("Failed to generate the Trainer Card. See console for details.");
-        btn.innerHTML = originalText; btn.style.opacity = "1"; btn.disabled = false;
+        resetButton();
     });
 }
 
@@ -968,10 +1010,8 @@ function downloadTierList() {
     if (!cardElement) return;
     
     const btn = document.querySelector('button[onclick="downloadTierList()"]');
-    const originalText = btn.innerHTML;
-    
-    btn.innerHTML = "⏳ Generating..."; btn.style.opacity = "0.7"; btn.disabled = true;
-    
+    const resetButton = withButtonLoading(btn, "⏳ Generating...");
+
     html2canvas(cardElement, { useCORS: true, backgroundColor: null, scale: 2, logging: false }).then(canvas => {
         const link = document.createElement('a');
         
@@ -983,11 +1023,11 @@ function downloadTierList() {
         link.href = canvas.toDataURL('image/png');
         link.click();
         
-        btn.innerHTML = originalText; btn.style.opacity = "1"; btn.disabled = false;
+        resetButton();
     }).catch(err => {
         console.error("Tier list generation failed:", err);
         alert("Failed to generate the Tier List. See console for details.");
-        btn.innerHTML = originalText; btn.style.opacity = "1"; btn.disabled = false;
+        resetButton();
     });
 }
 
@@ -1124,208 +1164,6 @@ function runSimulation() {
     </div>`;
 }
 
-let secretClickCount = 0;
-let secretClickTimer;
-window.raccAiMode = "toxic";
-
-function secretAiUnlock() {
-    secretClickCount++;
-    clearTimeout(secretClickTimer);
-    
-    secretClickTimer = setTimeout(() => { 
-        secretClickCount = 0; 
-    }, 2000); 
-
-    const aiBtn = document.getElementById('aiScoutBtn');
-    const reportDiv = document.getElementById('tc-ai-report');
-
-    if (!aiBtn) return;
-
-    if (secretClickCount === 5) {
-        window.raccAiMode = "toxic";
-        aiBtn.style.display = 'inline-block';
-        aiBtn.style.background = '#ef4444';
-        aiBtn.innerHTML = "🔥 Toxic Scout";
-    } else if (secretClickCount === 10) {
-        window.raccAiMode = "succubus";
-        aiBtn.style.display = 'inline-block';
-        aiBtn.style.background = '#d946ef';
-        aiBtn.innerHTML = "🦇 Succubus Scout";
-        secretClickCount = 0;
-    }
-}
-
-async function generateAiScoutReport() {
-    const selector = document.getElementById('cardTrainerSelector');
-    const reportDiv = document.getElementById('tc-ai-report');
-    const btn = document.getElementById('aiScoutBtn');
-    
-    if (!selector || !currentCalculatedStats) return;
-
-    const selectedName = selector.value;
-    const tData = currentCalculatedStats.trainerStats.find(t => t.name === selectedName);
-    if (!tData) return;
-
-    // Save original button text to reset it later
-    const originalBtnText = btn.innerHTML;
-    btn.innerHTML = "⏳ Summoning...";
-    btn.disabled = true;
-    reportDiv.style.display = "block";
-    reportDiv.innerHTML = "<span style='opacity:0.7;'>Gazing into the abyss...</span>";
-
-    const trainerRaces = currentRawData.filter(r => r.Trainer === selectedName);
-    const uniqueUmas = new Set(trainerRaces.map(r => r.UniqueName)).size;
-
-    const surfaceStats = { 'Turf': { beaten: 0, opp: 0 }, 'Dirt': { beaten: 0, opp: 0 } };
-    const distStats = { 'Short': { beaten: 0, opp: 0 }, 'Mile': { beaten: 0, opp: 0 }, 'Medium': { beaten: 0, opp: 0 }, 'Long': { beaten: 0, opp: 0 } };
-    const detailedStats = tData.detailedTourneyStats || {};
-
-    trainerRaces.forEach(r => {
-        const tStats = detailedStats[r.RawLength]; 
-        if (tStats) {
-            let surf = r.Surface.includes('Dirt') ? 'Dirt' : 'Turf';
-            surfaceStats[surf].beaten += tStats.beaten;
-            surfaceStats[surf].opp += tStats.totalOpp;
-
-            let dist = r.DistanceCategory; 
-            if(distStats[dist]) {
-                distStats[dist].beaten += tStats.beaten;
-                distStats[dist].opp += tStats.totalOpp;
-            }
-        }
-    });
-
-    const getBestDom = (statsObj) => {
-        let best = { name: 'None', dom: -1, opp: 0 };
-        for (const [key, val] of Object.entries(statsObj)) {
-            if (val.opp > 0) {
-                let dom = val.beaten / val.opp;
-                if ((dom > best.dom && val.opp >= 16) || best.dom === -1) {
-                    best = { name: key, dom: dom, opp: val.opp };
-                }
-            }
-        }
-        return best.name !== 'None' ? `${best.name} (${(best.dom*100).toFixed(1)}% Dominance)` : 'N/A';
-    };
-
-    const cleanAce = tData.ace ? tData.ace.replace(/<[^>]*>?/gm, '').trim() : "None";
-    const cleanFav = tData.favorite ? tData.favorite.replace(/<[^>]*>?/gm, '').trim() : "None";
-
-    const cleanData = {
-        name: tData.name,
-        totalRaces: trainerRaces.reduce((sum, r) => sum + r.RacesRun, 0),
-        rosterDepth: uniqueUmas,
-        winRate: tData.winRate,
-        dom: tData.dom,
-        avgPos: tData.avgPos,
-        tournamentWins: tData.tournamentWins,
-        favorite: cleanFav,
-        ace: cleanAce,
-        bestSurface: getBestDom(surfaceStats),
-        bestDistance: getBestDom(distStats),
-        persona: window.raccAiMode 
-    };
-
-    try {
-        const WORKER_URL = "https://racc-open-stats.vercel.app/api/scout"; 
-        
-        const response = await fetch(WORKER_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(cleanData)
-        });
-
-        const data = await response.json();
-        
-        if (data.insight) {
-            const formattedText = data.insight.split('\n').map(p => `<p style="margin-top:0; margin-bottom:8px;">${p}</p>`).join('');
-            
-            // Change the header color based on the persona
-            const headerColor = window.raccAiMode === "succubus" ? "#d946ef" : "#ef4444";
-            const icon = window.raccAiMode === "succubus" ? "🦇" : "🔥";
-            const title = window.raccAiMode === "succubus" ? "Succubus Insight" : "Toxic Scout Report";
-
-            reportDiv.innerHTML = `<strong style="color: ${headerColor};">${icon} ${title}:</strong><br>${formattedText}`;
-            reportDiv.style.borderLeft = `4px solid ${headerColor}`;
-        } else {
-            reportDiv.innerHTML = "<em>The summoning failed. Try again.</em>";
-        }
-    } catch (error) {
-        console.error("AI Error:", error);
-        reportDiv.innerHTML = "<em>Connection to the underworld lost.</em>";
-    } finally {
-        btn.innerHTML = originalBtnText;
-        btn.disabled = false;
-    }
-}
-
-async function generateAutoDraft() {
-    const typeEl = document.getElementById('simTypeSelector');
-    const btn = document.getElementById('autoDraftBtn');
-    const s1 = document.getElementById('simSlot1');
-    const s2 = document.getElementById('simSlot2');
-    const s3 = document.getElementById('simSlot3');
-
-    if (!typeEl || !currentCalculatedStats || !s1) return;
-
-    const type = typeEl.value; // Checks if we are drafting 'trainer' or 'uma'
-    const list = type === 'trainer' ? currentCalculatedStats.trainerStats : currentCalculatedStats.umaStats;
-
-    // Loading State
-    const originalBtnText = btn.innerHTML;
-    btn.innerHTML = "⏳ Calculating...";
-    btn.disabled = true;
-
-    // Give the AI the top 15 win-rates and top 15 dominances to build a team from
-    const topWr = [...list].sort((a, b) => parseFloat(b.winRate) - parseFloat(a.winRate)).slice(0, 15).map(x => `${x.name} (${x.winRate}% WR)`);
-    const topDom = [...list].sort((a, b) => parseFloat(b.dom) - parseFloat(a.dom)).slice(0, 15).map(x => `${x.name} (${x.dom}% Dom)`);
-
-    const payload = {
-        type: type,
-        topWr: topWr,
-        topDom: topDom
-    };
-
-    try {
-        const WORKER_URL = "https://racc-open-stats.vercel.app/api/teambuilder"; 
-        
-        const response = await fetch(WORKER_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-        
-        // The AI will return a strict JSON array: ["Name1", "Name2", "Name3"]
-        if (data.team && data.team.length === 3) {
-            
-            // Helper to cleanly select an option in the dropdown
-            const setSlot = (slot, value) => {
-                for (let i = 0; i < slot.options.length; i++) {
-                    if (slot.options[i].value === value) {
-                        slot.selectedIndex = i;
-                        break;
-                    }
-                }
-            };
-
-            setSlot(s1, data.team[0]);
-            setSlot(s2, data.team[1]);
-            setSlot(s3, data.team[2]);
-
-            // Force the simulator UI to calculate the new team
-            runSimulation(); 
-        }
-
-    } catch (error) {
-        console.error("Draft Error:", error);
-        alert("Calculation failed. Please try again.");
-    } finally {
-        btn.innerHTML = originalBtnText;
-        btn.disabled = false;
-    }
-}
 
 window.onload = function() {
     const savedTheme = localStorage.getItem('siteTheme');
