@@ -1107,43 +1107,118 @@ function populateTheorycrafterDropdown() {
     generateTheorycraft();
 }
 
+function getTheorycraftLensWeights(lens) {
+    if (lens === 'comfort') return { familiarity: 0.5, winRate: 0.2, dominance: 0.15, sample: 0.15 };
+    if (lens === 'ceiling') return { familiarity: 0.1, winRate: 0.45, dominance: 0.3, sample: 0.15 };
+    if (lens === 'meta') return { familiarity: 0.05, winRate: 0.2, dominance: 0.35, sample: 0.15, antiMeta: 0.25 };
+    return { familiarity: 0.3, winRate: 0.3, dominance: 0.25, sample: 0.15 };
+}
+
+function scoreTheorycraftCandidate(candidate, globalUma, lens) {
+    const weights = getTheorycraftLensWeights(lens);
+    const familiarity = Math.min(candidate.picks / 6, 1);
+    const winRate = candidate.racesRun > 0 ? candidate.wins / candidate.racesRun : 0;
+    const dominance = globalUma ? (parseFloat(globalUma.dom) / 100) : 0;
+    const sample = Math.min(candidate.racesRun / 12, 1);
+    const antiMeta = globalUma ? (1 - Math.min(parseFloat(globalUma.pickPct || 0) / 30, 1)) : 0.5;
+
+    return (
+        familiarity * weights.familiarity +
+        winRate * weights.winRate +
+        dominance * weights.dominance +
+        sample * weights.sample +
+        antiMeta * (weights.antiMeta || 0)
+    );
+}
+
 function generateTheorycraft() {
     const selector = document.getElementById('tcrafTrainerSelector');
+    const focusSelector = document.getElementById('tcrafFocusSelector');
     const container = document.getElementById('tcraf-results');
-    if (!selector || !currentCalculatedStats || !container) return;
+    const summary = document.getElementById('tcraf-summary');
+    if (!selector || !currentCalculatedStats || !container || !summary) return;
 
     const selectedName = selector.value;
+    const lens = focusSelector ? focusSelector.value : 'balanced';
     const tData = currentCalculatedStats.trainerStats.find(t => t.name === selectedName);
-    
-    if (!tData) { container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.7;">No data found for this trainer.</div>`; return; }
 
-    const historyArr = Object.entries(tData.characterHistory).map(([key, val]) => ({ name: key, ...val }));
-    const comfortTeam = [...historyArr].sort((a, b) => b.picks - a.picks).slice(0, 3);
-    const sweatTeam = [...historyArr].filter(a => a.picks >= 1).sort((a, b) => {
-        const wrA = a.racesRun > 0 ? a.wins / a.racesRun : 0;
-        const wrB = b.racesRun > 0 ? b.wins / b.racesRun : 0;
-        if (wrB !== wrA) return wrB - wrA;
-        return b.picks - a.picks; 
-    }).slice(0, 3);
-    const metaTeam = [...currentCalculatedStats.umaStats].sort((a, b) => b.dom - a.dom).slice(0, 3);
+    if (!tData) {
+        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.7;">No data found for this trainer.</div>`;
+        summary.innerHTML = "";
+        return;
+    }
 
-    const renderTeam = (title, description, umas, typeDesc) => {
+    const historyArr = Object.entries(tData.characterHistory).map(([key, val]) => {
+        const globalUma = currentCalculatedStats.umaStats.find(u => u.name === key);
+        const wr = val.racesRun > 0 ? (val.wins / val.racesRun * 100) : 0;
+        return {
+            name: key,
+            ...val,
+            globalUma,
+            trainerWinRate: wr.toFixed(1),
+            trainerDom: globalUma ? globalUma.dom : "0.0",
+            theoryScore: scoreTheorycraftCandidate(val, globalUma, lens)
+        };
+    });
+
+    historyArr.sort((a, b) => b.theoryScore - a.theoryScore);
+
+    const comfortTeam = [...historyArr].sort((a, b) => b.picks - a.picks || b.theoryScore - a.theoryScore).slice(0, 3);
+    const ceilingTeam = [...historyArr].sort((a, b) => (parseFloat(b.trainerWinRate) + parseFloat(b.trainerDom)) - (parseFloat(a.trainerWinRate) + parseFloat(a.trainerDom))).slice(0, 3);
+    const signatureTeam = historyArr.slice(0, 3);
+    const metaCounterTeam = [...currentCalculatedStats.umaStats]
+        .filter(u => !historyArr.some(h => h.name === u.name))
+        .sort((a, b) => (parseFloat(a.pickPct || 0) - parseFloat(b.pickPct || 0)) || (parseFloat(b.dom) - parseFloat(a.dom)))
+        .slice(0, 3);
+
+    const trainerPoolSize = historyArr.length;
+    const avgTrainerWr = trainerPoolSize > 0 ? (historyArr.reduce((sum, item) => sum + parseFloat(item.trainerWinRate), 0) / trainerPoolSize).toFixed(1) : "0.0";
+    const avgTrainerDom = trainerPoolSize > 0 ? (historyArr.reduce((sum, item) => sum + parseFloat(item.trainerDom || 0), 0) / trainerPoolSize).toFixed(1) : "0.0";
+    const mostReliable = historyArr.find(item => item.racesRun >= 3) || historyArr[0];
+    const flexPick = [...historyArr].sort((a, b) => (b.racesRun - a.racesRun) || (parseFloat(b.trainerWinRate) - parseFloat(a.trainerWinRate)))[0];
+
+    summary.innerHTML = `
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+            <div class="tc-stat-box"><div class="tc-stat-label">Lens</div><div class="tc-stat-value" style="font-size:1rem;">${lens}</div></div>
+            <div class="tc-stat-box"><div class="tc-stat-label">Uma Pool</div><div class="tc-stat-value">${trainerPoolSize}</div></div>
+            <div class="tc-stat-box"><div class="tc-stat-label">Avg WR</div><div class="tc-stat-value">${avgTrainerWr}%</div></div>
+            <div class="tc-stat-box"><div class="tc-stat-label">Avg Dom</div><div class="tc-stat-value">${avgTrainerDom}%</div></div>
+        </div>
+        <div style="margin-top: 12px; background: rgba(0,0,0,0.12); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px;">
+            <div style="font-weight:700; color:var(--accent-color); margin-bottom:6px;">Draft Notes</div>
+            <div style="font-size:0.9rem; opacity:0.88;">
+                Reliable anchor: <b>${mostReliable ? mostReliable.name : "N/A"}</b> •
+                Flex pick: <b>${flexPick ? flexPick.name : "N/A"}</b> •
+                Best plan for this lens: <b>${signatureTeam.map(u => u.name).join(", ") || "N/A"}</b>
+            </div>
+        </div>
+    `;
+
+    const renderTeam = (title, description, umas, typeDesc, accent = "var(--accent-color)") => {
         let html = `
         <div style="background: rgba(0,0,0,0.1); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-            <h3 style="margin: 0 0 5px 0; color: var(--accent-color); font-size: 1.05em;">${title}</h3>
-            <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 12px;">${description}</div>
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+                <div>
+                    <h3 style="margin: 0 0 5px 0; color: ${accent}; font-size: 1.05em;">${title}</h3>
+                    <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 12px;">${description}</div>
+                </div>
+                <span class="stat-badge">${umas.length}/3 picks</span>
+            </div>
             <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: space-evenly;">`;
-        
+
         umas.forEach(u => {
-            const icon = getIconHtml(u.name.split('(')[0].trim(), 'uma');
-            html += `<div style="display: flex; flex-direction: column; align-items: center; width: 90px; text-align: center;">
-                ${icon}<span style="font-size: 0.8rem; font-weight: 600; margin-top: 6px; line-height: 1.2;">${u.name}</span>
-                <span style="font-size: 0.7rem; color: var(--accent-color); margin-top: 4px; font-weight: bold;">${typeDesc(u)}</span>
+            const baseName = u.name.split('(')[0].trim();
+            const icon = getIconHtml(baseName, 'uma');
+            html += `<div style="display: flex; flex-direction: column; align-items: center; width: 120px; text-align: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px 8px; border-radius: 10px;">
+                ${icon}
+                <span style="font-size: 0.8rem; font-weight: 600; margin-top: 6px; line-height: 1.2;">${u.name}</span>
+                <span style="font-size: 0.7rem; color: ${accent}; margin-top: 4px; font-weight: bold;">${typeDesc(u)}</span>
+                ${u.trainerWinRate ? `<span style="font-size:0.72rem; opacity:0.75;">${u.trainerWinRate}% WR • ${u.trainerDom}% Dom</span>` : ""}
             </div>`;
         });
-        
-        for(let i = umas.length; i < 3; i++) {
-             html += `<div style="display: flex; flex-direction: column; align-items: center; width: 90px; text-align: center; opacity: 0.3;">
+
+        for (let i = umas.length; i < 3; i++) {
+            html += `<div style="display: flex; flex-direction: column; align-items: center; width: 120px; text-align: center; opacity: 0.3;">
                 <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--border-color); margin-bottom: 6px;"></div>
                 <span style="font-size: 0.8rem; font-weight: 500;">Empty Slot</span>
             </div>`;
@@ -1152,9 +1227,10 @@ function generateTheorycraft() {
     };
 
     let html = '';
-    html += renderTeam("Comfort Zone", "This trainer's most frequently picked setup.", comfortTeam, (u) => `${u.picks} Picks`);
-    html += renderTeam("Maximum Efficiency", "This trainer's statistically highest win-rate setup.", sweatTeam, (u) => `${u.racesRun > 0 ? ((u.wins / u.racesRun) * 100).toFixed(1) : "0.0"}% WR`);
-    html += renderTeam("Global Meta Setup", "The mathematical top 3 most dominant Umas across the entire playerbase.", metaTeam, (u) => `${u.dom}% Dominance`);
+    html += renderTeam("Comfort Zone", "Most familiar setup with the lowest execution risk.", comfortTeam, (u) => `${u.picks} Picks`);
+    html += renderTeam("Signature Build", "Best overall fit for the selected theorycraft lens.", signatureTeam, (u) => `${(u.theoryScore * 100).toFixed(0)} Score`, "#60a5fa");
+    html += renderTeam("Maximum Ceiling", "Highest upside based on trainer WR plus global dominance.", ceilingTeam, (u) => `${(parseFloat(u.trainerWinRate) + parseFloat(u.trainerDom)).toFixed(1)} Power`, "#f59e0b");
+    html += renderTeam("Meta Counter Core", "Low-pick options that can dodge common prep while keeping value.", metaCounterTeam, (u) => `${u.pickPct}% Pick • ${u.dom}% Dom`, "#f472b6");
     container.innerHTML = html;
 }
 
@@ -1179,49 +1255,95 @@ function populateSimDropdowns() {
 
 function runSimulation() {
     const typeEl = document.getElementById('simTypeSelector');
+    const lensEl = document.getElementById('simLensSelector');
     const container = document.getElementById('sim-results');
+    const comparison = document.getElementById('sim-comparison');
     const s1 = document.getElementById('simSlot1'), s2 = document.getElementById('simSlot2'), s3 = document.getElementById('simSlot3');
 
-    if (!typeEl || !container || !currentCalculatedStats || !s1) return;
-    
+    if (!typeEl || !container || !comparison || !currentCalculatedStats || !s1) return;
+
     const type = typeEl.value;
+    const lens = lensEl ? lensEl.value : 'balanced';
     const list = type === 'trainer' ? currentCalculatedStats.trainerStats : currentCalculatedStats.umaStats;
     const members = [list.find(x => x.name === s1.value), list.find(x => x.name === s2.value), list.find(x => x.name === s3.value)].filter(Boolean);
 
-    if (members.length === 0) { container.innerHTML = `<div style="text-align:center; opacity:0.6;">Select members to simulate.</div>`; return; }
+    if (members.length === 0) {
+        container.innerHTML = `<div style="text-align:center; opacity:0.6;">Select members to simulate.</div>`;
+        comparison.innerHTML = "";
+        return;
+    }
 
-    let totalWins = 0, totalRaces = 0, totalDom = 0, domCount = 0;
+    const weightsMap = {
+        balanced: { wr: 0.4, dom: 0.35, consistency: 0.25 },
+        wins: { wr: 0.6, dom: 0.2, consistency: 0.2 },
+        dom: { wr: 0.25, dom: 0.55, consistency: 0.2 },
+        safe: { wr: 0.25, dom: 0.2, consistency: 0.55 }
+    };
+    const weights = weightsMap[lens] || weightsMap.balanced;
+
+    let totalWins = 0, totalRaces = 0, totalDom = 0, totalAvgPos = 0, domCount = 0;
     let cardsHtml = '';
-    
+
     members.forEach(m => {
-        totalWins += m.wins || 0; totalRaces += m.totalRacesRun || 0; totalDom += parseFloat(m.dom) || 0; domCount++;
+        const wr = parseFloat(m.winRate) || 0;
+        const dom = parseFloat(m.dom) || 0;
+        const consistency = Math.max(0, 100 - ((parseFloat(m.avgPos) || 10) * 12));
+        const score = (wr * weights.wr) + (dom * weights.dom) + (consistency * weights.consistency);
+
+        totalWins += m.wins || 0;
+        totalRaces += (m.totalRacesRun || m.entries || 0);
+        totalDom += dom;
+        totalAvgPos += parseFloat(m.avgPos) || 0;
+        domCount++;
+
         const icon = getIconHtml(m.name.split('(')[0].trim(), type);
-        cardsHtml += `<div style="display: flex; flex-direction: column; align-items: center; width: 95px; text-align: center; background: rgba(0,0,0,0.2); padding: 12px 8px; border-radius: 8px; border: 1px solid var(--border-color);">
-            ${icon}<span style="font-size: 0.8rem; font-weight: 600; margin-top: 6px; line-height: 1.2;">${m.name}</span>
+        cardsHtml += `<div style="display: flex; flex-direction: column; align-items: center; width: 110px; text-align: center; background: rgba(0,0,0,0.2); padding: 12px 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+            ${icon}
+            <span style="font-size: 0.8rem; font-weight: 600; margin-top: 6px; line-height: 1.2;">${m.name}</span>
             <span style="font-size: 0.7rem; color: var(--accent-color); margin-top: 4px;">${m.winRate}% WR</span>
             <span style="font-size: 0.7rem; opacity: 0.8;">${m.dom}% Dom</span>
+            <span style="font-size: 0.72rem; opacity: 0.75;">${score.toFixed(1)} Lens Score</span>
         </div>`;
     });
 
     const combinedWr = totalRaces > 0 ? ((totalWins / totalRaces) * 100).toFixed(1) : "0.0";
     const avgDom = domCount > 0 ? (totalDom / domCount).toFixed(1) : "0.0";
+    const avgPos = domCount > 0 ? (totalAvgPos / domCount).toFixed(2) : "0.00";
+    const teamScore = ((parseFloat(combinedWr) * weights.wr) + (parseFloat(avgDom) * weights.dom) + (Math.max(0, 100 - (parseFloat(avgPos) * 12)) * weights.consistency)).toFixed(1);
 
     container.innerHTML = `
     <div style="background: rgba(0,0,0,0.1); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
         <h3 style="margin: 0 0 12px 0; color: var(--accent-color); text-align: center;">Team Aggregate Performance</h3>
         <div style="display: flex; gap: 12px; justify-content: space-evenly; margin-bottom: 15px; flex-wrap: wrap;">${cardsHtml}</div>
-        <div style="display: flex; gap: 15px; justify-content: space-around; background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-            <div style="text-align: center;">
-                <div style="font-size: 0.75em; opacity: 0.7; text-transform: uppercase;">Combined Win Rate</div>
-                <div style="font-size: 1.2em; font-weight: bold; color: var(--accent-color);">${combinedWr}%</div>
-                <div style="font-size: 0.7em; opacity: 0.5;">(${totalWins} / ${totalRaces} Races)</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="font-size: 0.75em; opacity: 0.7; text-transform: uppercase;">Average Dominance</div>
-                <div style="font-size: 1.2em; font-weight: bold; color: var(--accent-color);">${avgDom}%</div>
-            </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="text-align: center;"><div style="font-size: 0.75em; opacity: 0.7; text-transform: uppercase;">Combined Win Rate</div><div style="font-size: 1.2em; font-weight: bold; color: var(--accent-color);">${combinedWr}%</div><div style="font-size: 0.7em; opacity: 0.5;">(${totalWins} / ${totalRaces})</div></div>
+            <div style="text-align: center;"><div style="font-size: 0.75em; opacity: 0.7; text-transform: uppercase;">Average Dominance</div><div style="font-size: 1.2em; font-weight: bold; color: var(--accent-color);">${avgDom}%</div></div>
+            <div style="text-align: center;"><div style="font-size: 0.75em; opacity: 0.7; text-transform: uppercase;">Average Rank</div><div style="font-size: 1.2em; font-weight: bold; color: var(--accent-color);">${avgPos}</div></div>
+            <div style="text-align: center;"><div style="font-size: 0.75em; opacity: 0.7; text-transform: uppercase;">Lens Score</div><div style="font-size: 1.2em; font-weight: bold; color: var(--accent-color);">${teamScore}</div></div>
         </div>
     </div>`;
+
+    const ranked = [...list].sort((a, b) => {
+        const scoreA = (parseFloat(a.winRate || 0) * weights.wr) + (parseFloat(a.dom || 0) * weights.dom) + (Math.max(0, 100 - ((parseFloat(a.avgPos) || 10) * 12)) * weights.consistency);
+        const scoreB = (parseFloat(b.winRate || 0) * weights.wr) + (parseFloat(b.dom || 0) * weights.dom) + (Math.max(0, 100 - ((parseFloat(b.avgPos) || 10) * 12)) * weights.consistency);
+        return scoreB - scoreA;
+    }).slice(0, 5);
+
+    comparison.innerHTML = `
+        <div style="background: rgba(0,0,0,0.1); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px;">
+            <h3 style="margin: 0 0 10px 0; color: var(--accent-color);">Lens Comparison Board</h3>
+            <div style="font-size: 0.85rem; opacity: 0.75; margin-bottom: 12px;">Top individual options for the current bias: <b>${lens}</b></div>
+            <div style="display:grid; gap:10px;">
+                ${ranked.map((item, index) => `<div style="display:flex; justify-content:space-between; gap:12px; align-items:center; background: rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:8px; padding:10px 12px;">
+                    <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                        <span class="stat-badge">#${index + 1}</span>
+                        <span style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name}</span>
+                    </div>
+                    <div style="font-size:0.82rem; opacity:0.82;">${item.winRate}% WR • ${item.dom}% Dom • ${item.avgPos || "-"} Avg</div>
+                </div>`).join("")}
+            </div>
+        </div>
+    `;
 }
 
 

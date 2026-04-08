@@ -65,26 +65,43 @@
         <div class="card table-card">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding: 0 10px;">
                 <h2 style="margin: 0;">TRAINER PRESETS</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <label style="margin: 0;">Target Trainer:</label>
                     <div class="select-wrapper" style="min-width: 200px;">
                         <select id="tcrafTrainerSelector" onchange="generateTheorycraft()"></select>
                     </div>
+                    <div class="select-wrapper" style="min-width: 180px;">
+                        <select id="tcrafFocusSelector" onchange="generateTheorycraft()">
+                            <option value="balanced">Balanced Lens</option>
+                            <option value="comfort">Comfort Priority</option>
+                            <option value="ceiling">High Ceiling</option>
+                            <option value="meta">Anti-Meta</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            
+
+            <div id="tcraf-summary" style="padding: 0 10px 10px;"></div>
             <div id="tcraf-results" style="padding: 10px;"></div>
         </div>
 
         <div class="card table-card" style="margin-top: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding: 0 10px;">
                 <h2 style="margin: 0;">CUSTOM TEAM SIMULATOR</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <label style="margin: 0;">Simulate By:</label>
                     <div class="select-wrapper">
                         <select id="simTypeSelector" onchange="populateSimDropdowns()">
                             <option value="trainer">Trainers</option>
                             <option value="uma">Umas</option>
+                        </select>
+                    </div>
+                    <div class="select-wrapper">
+                        <select id="simLensSelector" onchange="runSimulation()">
+                            <option value="balanced">Balanced Lens</option>
+                            <option value="wins">Win Rate Bias</option>
+                            <option value="dom">Dominance Bias</option>
+                            <option value="safe">Consistency Bias</option>
                         </select>
                     </div>
                 </div>
@@ -103,6 +120,7 @@
             </div>
 
             <div id="sim-results" style="padding: 10px;"></div>
+            <div id="sim-comparison" style="padding: 0 10px 10px;"></div>
         </div>
     </div>
 
