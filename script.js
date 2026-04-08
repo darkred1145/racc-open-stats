@@ -651,16 +651,78 @@ const formatItem = (item, type) => {
 }
 
 // --- Render Functions ---
+const TABLE_CONFIGS = {
+    uma: {
+        core: [
+            { key: "name", label: "Name" },
+            { key: "picks", label: "Picks", numeric: true },
+            { key: "wins", label: "Wins", numeric: true },
+            { key: "winRate", label: "Win Rate %", numeric: true },
+            { key: "podiumRate", label: "Top 3 %", numeric: true },
+            { key: "dom", label: "Dominance %", numeric: true }
+        ],
+        extended: [
+            { key: "name", label: "Name" },
+            { key: "picks", label: "Picks", numeric: true },
+            { key: "wins", label: "Wins", numeric: true },
+            { key: "winRate", label: "Win Rate %", numeric: true },
+            { key: "avgPos", label: "Avg Rank", numeric: true },
+            { key: "volatility", label: "Typical Finish", numeric: true },
+            { key: "bestTourney", label: "Best Tourney" },
+            { key: "tourneyStatsDisplay", label: "Tourney Win %" }
+        ],
+        meta: [
+            { key: "name", label: "Name" },
+            { key: "pickPct", label: "Pick Rate %", numeric: true },
+            { key: "truePickPct", label: "True Pick %", numeric: true },
+            { key: "dom", label: "Dominance %", numeric: true },
+            { key: "banStatsDisplay", label: "Ban Rate" },
+            { key: "presenceDisplay", label: "Presence" }
+        ]
+    },
+    trainer: {
+        core: [
+            { key: "name", label: "Trainer" },
+            { key: "entries", label: "Entries", numeric: true },
+            { key: "wins", label: "Wins", numeric: true },
+            { key: "winRate", label: "Win Rate %", numeric: true },
+            { key: "podiumRate", label: "Top 3 %", numeric: true },
+            { key: "dom", label: "Dominance %", numeric: true }
+        ],
+        performance: [
+            { key: "name", label: "Trainer" },
+            { key: "avgPos", label: "Avg Rank", numeric: true },
+            { key: "volatility", label: "Typical Finish", numeric: true },
+            { key: "bestTourney", label: "Best Tourney" },
+            { key: "tourneyStatsDisplay", label: "Tourney Win %" },
+            { key: "dom", label: "Dominance %", numeric: true }
+        ],
+        picks: [
+            { key: "name", label: "Trainer" },
+            { key: "entries", label: "Entries", numeric: true },
+            { key: "favorite", label: "Most Picked" },
+            { key: "ace", label: "Best Uma" }
+        ]
+    }
+};
+
 function renderTable(tableId, data, columns) {
-    const tbody = document.querySelector(`#${tableId} tbody`);
-    if (!tbody) return;
+    const table = document.getElementById(tableId);
+    const thead = table ? table.querySelector("thead") : null;
+    const tbody = table ? table.querySelector("tbody") : null;
+    if (!thead || !tbody) return;
+
+    thead.innerHTML = `<tr>${columns.map((col, index) =>
+        `<th onclick="sortTable('${tableId}', ${index}${col.numeric ? ", true" : ""})">${col.label}</th>`
+    ).join("")}</tr>`;
+
     tbody.innerHTML = data.map(row => {
         const cells = columns.map(col => {
-            if (col === 'name') return `<td>${row.displayName}</td>`;
-            if (col === 'winRate' || col === 'dom' || col === 'tourneyWinPct' || col === 'pickPct' || col === 'truePickPct') return `<td>${row[col]}%</td>`;
-            return `<td>${row[col]}</td>`;
+            if (col.key === "name") return `<td>${row.displayName}</td>`;
+            if (["winRate", "dom", "tourneyWinPct", "pickPct", "truePickPct", "podiumRate"].includes(col.key)) return `<td>${row[col.key]}%</td>`;
+            return `<td>${row[col.key]}</td>`;
         });
-        return `<tr>${cells.join('')}</tr>`;
+        return `<tr>${cells.join("")}</tr>`;
     }).join('');
 }
 
@@ -699,7 +761,7 @@ function renderTierList(containerId, data, countKey, minReq, sortKey) {
     let html = '';
 
     ['S', 'A', 'B', 'C', 'D', 'F'].forEach(tier => {
-        if (tiers[tier].length === 0 && tier !== 'S') return;
+        if (tiers[tier].length === 0) return;
         tiers[tier].sort((a, b) => b[sortKey] - a[sortKey]);
         html += `
             <div class="tier-row">
@@ -740,18 +802,16 @@ function updateData() {
     const stats = calculateStats(filtered);
     currentCalculatedStats = stats;
 
-if (document.getElementById('umaTable')) {
+    if (document.getElementById('umaTable')) {
+        const umaStatsView = document.getElementById('umaStatsView')?.value || 'core';
         stats.umaStats.sort((a, b) => b.dom - a.dom);
-        renderTable('umaTable', stats.umaStats, 
-            ['name', 'picks', 'pickPct', 'truePickPct', 'wins', 'winRate', 'podiumRate', 'dom', 'avgPos', 'volatility', 'bestTourney', 'tourneyStatsDisplay', 'banStatsDisplay', 'presenceDisplay']
-        );
+        renderTable('umaTable', stats.umaStats, TABLE_CONFIGS.uma[umaStatsView] || TABLE_CONFIGS.uma.core);
     }
 
     if (document.getElementById('trainerTable')) {
+        const trainerStatsView = document.getElementById('trainerStatsView')?.value || 'core';
         stats.trainerStats.sort((a, b) => b.dom - a.dom);
-        renderTable('trainerTable', stats.trainerStats, 
-            ['name', 'entries', 'wins', 'winRate', 'podiumRate', 'dom', 'avgPos', 'volatility', 'bestTourney', 'tourneyStatsDisplay', 'favorite', 'ace']
-        );
+        renderTable('trainerTable', stats.trainerStats, TABLE_CONFIGS.trainer[trainerStatsView] || TABLE_CONFIGS.trainer.core);
     }
 
     if (document.getElementById('umaTierListWR')) {

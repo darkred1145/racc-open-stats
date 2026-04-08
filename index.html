@@ -196,54 +196,46 @@
 
     <div id="uma-stats" class="view-section">
         <div class="card table-card">
-            <h2 style="margin-bottom: 20px;">Uma Statistics</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; margin-bottom: 20px;">
+                <h2 style="margin-bottom: 0;">Uma Statistics</h2>
+                <div class="control-group" style="min-width: 220px;">
+                    <label for="umaStatsView">Visible Columns</label>
+                    <div class="select-wrapper">
+                        <select id="umaStatsView" onchange="updateData()">
+                            <option value="core">Core Stats</option>
+                            <option value="extended">Extended Stats</option>
+                            <option value="meta">Meta / Availability</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <div class="table-wrapper">
                 <table id="umaTable">
-                <thead>
-                    <tr>
-                        <th onclick="sortTable('umaTable', 0)">Name</th>
-                        <th onclick="sortTable('umaTable', 1, true)">Picks</th>
-                        <th onclick="sortTable('umaTable', 2, true)">Pick Rate %</th> 
-                        <th onclick="sortTable('umaTable', 3, true)">True Pick %</th>
-                        <th onclick="sortTable('umaTable', 4, true)">Wins</th>
-                        <th onclick="sortTable('umaTable', 5, true)">Win Rate %</th>
-                        <th onclick="sortTable('umaTable', 6, true)">Top 3 %</th>
-                        <th onclick="sortTable('umaTable', 7, true)">Dominance %</th>
-                        <th onclick="sortTable('umaTable', 8, true)">Avg Rank</th>
-                        <th onclick="sortTable('umaTable', 9, true)">Typical Finish</th>
-                        <th onclick="sortTable('umaTable', 10)">Best Tourney</th>
-                        <th onclick="sortTable('umaTable', 11, true)">Tourney Win %</th>
-                        <th onclick="sortTable('umaTable', 12, true)">Ban Rate</th>
-                        <th onclick="sortTable('umaTable', 13, true)">Presence</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <div id="trainer-stats" class="view-section">
         <div class="card table-card">
-            <h2 style="margin-bottom: 20px;">Trainer Statistics</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; margin-bottom: 20px;">
+                <h2 style="margin-bottom: 0;">Trainer Statistics</h2>
+                <div class="control-group" style="min-width: 220px;">
+                    <label for="trainerStatsView">Visible Columns</label>
+                    <div class="select-wrapper">
+                        <select id="trainerStatsView" onchange="updateData()">
+                            <option value="core">Core Stats</option>
+                            <option value="performance">Performance</option>
+                            <option value="picks">Pick Summary</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <div class="table-wrapper">
                <table id="trainerTable">
-                    <thead>
-                        <tr>
-                            <th onclick="sortTable('trainerTable', 0)">Trainer</th>
-                            <th onclick="sortTable('trainerTable', 1, true)">Entries</th>
-                            <th onclick="sortTable('trainerTable', 2, true)">Wins</th>
-                            <th onclick="sortTable('trainerTable', 3, true)">Win Rate %</th>
-                            <th onclick="sortTable('trainerTable', 4, true)">Top 3 %</th>
-                            <th onclick="sortTable('trainerTable', 5, true)">Dominance %</th>
-                            <th onclick="sortTable('trainerTable', 6, true)">Avg Rank</th>
-                            <th onclick="sortTable('trainerTable', 7, true)">Typical Finish</th>
-                            <th onclick="sortTable('trainerTable', 8)">Best Tourney</th>
-                            <th onclick="sortTable('trainerTable', 9, true)">Tourney Win %</th>
-                            <th>Most Picked</th>
-                            <th>Best Uma</th>
-                        </tr>
-                    </thead>
+                    <thead></thead>
                     <tbody></tbody>
                 </table>
             </div>
