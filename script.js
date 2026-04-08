@@ -14,15 +14,27 @@ let liveFirebaseData = [];
 let currentCalculatedStats = null;
 
 // --- Helper: Generate Icon HTML ---
-function getIconHtml(name, type) {
+function getIconHtml(name, type, outfitName = 'Original') {
     if (!name || name === "Unknown") return "";
 
+    // For uma characters, try to use gametora.com URLs
+    if (type === 'uma') {
+        const outfitId = getOutfitId(name, outfitName);
+        if (outfitId) {
+            const baseId = Math.floor(outfitId / 100);
+            const gametoraUrl = `https://gametora.com/images/umamusume/characters/chara_stand_${baseId}_${outfitId}.png`;
+            const fallbackLogic = "this.onerror=null; this.src='uma/${name.toLowerCase().replace(/['.]/g, '').replace(/\s+/g, '_')}.png';";
+            return `<img src="${gametoraUrl}" class="char-icon" loading="lazy" decoding="async" onerror="${fallbackLogic}" alt="">`;
+        }
+    }
+
+    // Fallback to local icons for trainers or if gametora URL not available
     const fileName = name.toLowerCase()
-        .replace(/['.]/g, '')       
-        .replace(/\s+/g, '_');      
+        .replace(/['.]/g, '')
+        .replace(/\s+/g, '_');
 
     const folder = type === 'uma' ? 'uma' : 'trainer';
-    const repoBaseUrl = 'darkred1145.github.io/racc-open-stats'; 
+    const repoBaseUrl = 'darkred1145.github.io/racc-open-stats';
     const localPath = `${folder}/${fileName}.png`;
     const cdnPath = `https://wsrv.nl/?url=${repoBaseUrl}/${localPath}&w=96&output=webp`;
     const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -95,18 +107,20 @@ function getDistanceCategory(surfaceString) {
 // --- Formatting Helper ---
 function formatName(fullName, type = 'uma') {
     if (!fullName) return "Unknown";
-    
+
     let mainName = fullName;
     let variantHtml = "";
+    let outfitName = 'Original';
 
     if (fullName.includes('(')) {
         const parts = fullName.split('(');
         mainName = parts[0].trim();
         const variant = parts[1].replace(')', '').trim();
         variantHtml = ` <span class="variant-tag">${variant}</span>`;
+        outfitName = variant;
     }
 
-    const icon = getIconHtml(mainName, type); 
+    const icon = getIconHtml(mainName, type, outfitName);
 
     return `<div class="name-cell">${icon}${mainName}${variantHtml}</div>`;
 }
@@ -1208,11 +1222,12 @@ function generateTheorycraft() {
 
         umas.forEach(u => {
             const baseName = u.name.split('(')[0].trim();
-            const icon = getIconHtml(baseName, 'uma');
+            const outfitName = u.name.includes('(') ? u.name.split('(')[1].replace(')', '').trim() : 'Original';
+            const icon = getIconHtml(baseName, 'uma', outfitName);
             html += `<div style="display: flex; flex-direction: column; align-items: center; width: 120px; text-align: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px 8px; border-radius: 10px;">
                 ${icon}
                 <span style="font-size: 0.8rem; font-weight: 600; margin-top: 6px; line-height: 1.2;">${u.name}</span>
-                <span style="font-size: 0.7rem; color: ${accent}; margin-top: 4px; font-weight: bold;">${typeDesc(u)}</span>
+                <span style="font-size: 0.8rem; color: ${accent}; margin-top: 4px; font-weight: bold;">${typeDesc(u)}</span>
                 ${u.trainerWinRate ? `<span style="font-size:0.72rem; opacity:0.75;">${u.trainerWinRate}% WR • ${u.trainerDom}% Dom</span>` : ""}
             </div>`;
         });
@@ -1296,7 +1311,7 @@ function runSimulation() {
         totalAvgPos += parseFloat(m.avgPos) || 0;
         domCount++;
 
-        const icon = getIconHtml(m.name.split('(')[0].trim(), type);
+        const icon = getIconHtml(m.name.split('(')[0].trim(), type, m.name.includes('(') ? m.name.split('(')[1].replace(')', '').trim() : 'Original');
         cardsHtml += `<div style="display: flex; flex-direction: column; align-items: center; width: 110px; text-align: center; background: rgba(0,0,0,0.2); padding: 12px 8px; border-radius: 8px; border: 1px solid var(--border-color);">
             ${icon}
             <span style="font-size: 0.8rem; font-weight: 600; margin-top: 6px; line-height: 1.2;">${m.name}</span>
