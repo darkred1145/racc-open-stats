@@ -29,6 +29,31 @@
 [data-theme="manga"] { color-scheme: light; --bg-color: #ffffff; --card-bg: #ffffff; --text-color: #000000; --accent-color: #000000; --secondary-color: #f0f0f0; --border-color: #000000; --hover-bg: rgba(0, 0, 0, 0.08); --shadow-sm: 2px 2px 0px rgba(0,0,0,1); --shadow-md: 4px 4px 0px rgba(0,0,0,1); --shadow-lg: 6px 6px 0px rgba(0,0,0,1); }
 [data-theme="succubus"] { color-scheme: dark; --bg-color: #111111; --card-bg: #1f1f1f; --text-color: #f5f5f5; --accent-color: #ed2553; --secondary-color: #2d2d2d; --border-color: #333333; --hover-bg: rgba(237, 37, 83, 0.1); }
 
+/* --- MAINTENANCE BANNER --- */
+#maintenance-banner {
+    background: linear-gradient(90deg, #f43f5e, #f59e0b, #f43f5e);
+    background-size: 200% 100%;
+    animation: maintSlide 3s linear infinite;
+    color: #fff;
+    text-align: center;
+    padding: 10px 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.maint-icon { font-size: 1.1em; }
+@keyframes maintSlide {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
 /* --- BASE STYLES --- */
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

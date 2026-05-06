@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - UMA ERROR | Racc Open Stats</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1a1a1d;
+            --card: #2d2d30;
+            --accent: #4ecca3;
+            --text: #e0e0e0;
+            --pink: #f43f5e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .bg-uma {
+            position: absolute;
+            opacity: 0.06;
+            font-size: 20rem;
+            pointer-events: none;
+            user-select: none;
+            animation: float 6s ease-in-out infinite;
+        }
+        .bg-uma:nth-child(1) { top: -5%; left: -5%; animation-delay: 0s; }
+        .bg-uma:nth-child(2) { bottom: -5%; right: -5%; animation-delay: 2s; }
+        .bg-uma:nth-child(3) { top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: 4s; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(5deg); }
+        }
+        .card {
+            background: var(--card);
+            border: 2px solid var(--accent);
+            border-radius: 24px;
+            padding: 50px 60px;
+            text-align: center;
+            max-width: 640px;
+            z-index: 10;
+            box-shadow: 0 0 60px rgba(78, 204, 163, 0.15);
+            animation: popIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .error-code {
+            font-size: 8rem;
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--pink), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .meme-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--pink);
+            margin: 20px auto;
+            display: block;
+            animation: shake 0.5s ease-in-out infinite alternate;
+        }
+        @keyframes shake {
+            from { transform: rotate(-3deg); }
+            to { transform: rotate(3deg); }
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .subtitle {
+            color: var(--accent);
+            font-size: 1rem;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+        .meme-text {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 18px 24px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            border-left: 4px solid var(--pink);
+        }
+        .meme-text span {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .haru-quote {
+            font-style: italic;
+            opacity: 0.7;
+            font-size: 0.85rem;
+            margin: 16px 0;
+        }
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(78,204,163,0.3); }
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border-color, #444);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+        .footer-meme {
+            margin-top: 24px;
+            font-size: 0.75rem;
+            opacity: 0.4;
+            font-family: monospace;
+        }
+        .random-uma {
+            display: inline-block;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="bg-uma">🐴</div>
+    <div class="bg-uma">🏇</div>
+    <div class="bg-uma">💨</div>
+
+    <div class="card">
+        <div class="error-code">404</div>
+        <img class="meme-img" src="uma/haru_urara.png" alt="Haru Urara" onerror="this.style.display='none'">
+        <h1>UMA ERROR! Page not found!</h1>
+        <div class="subtitle">Even <strong>Haru Urara</strong> has a better win rate than this page's existence.</div>
+
+        <div class="meme-text">
+            <span>TRAINER!</span> The page you're looking for ran away faster than <span>Gold Ship</span> avoiding practice!<br><br>
+            Maybe it got lost in <span>Champions Meeting</span> qualifying, or <span>Special Week</span> ate it by mistake.<br><br>
+            Either way, it's <span>UMA</span> here. 🐴
+        </div>
+
+        <div class="haru-quote">"I tried my best... but I still lost the page..." — Haru Urara, probably</div>
+
+        <div class="btn-row">
+            <a class="btn btn-primary" href="/">🏠 Back to Dashboard</a>
+            <a class="btn btn-secondary" href="javascript:history.back()">⬅️ Go Back</a>
+        </div>
+
+        <div class="footer-meme">
+            ERROR_CODE: <span class="random-uma">🐎</span> HORSE_MISSING · Racc Open Stats · "Uma what you're looking for?" © 2025
+        </div>
+    </div>
+
+    <script>
+        // Random fun console message
+        console.log("%c UMA ERROR! ", "background: #f43f5e; color: white; font-size: 20px; padding: 4px 8px; border-radius: 4px;");
+        console.log("%c Even Haru Urara has a better win rate than this URL. ", "color: #4ecca3; font-size: 14px;");
+
+        // Cycle through random Uma Musume names in the title
+        const umaNames = ["Haru Urara", "Gold Ship", "Special Week", "Agnes Tachyon", "Rice Shower", "Grass Wonder", "Symboli Rudolf"];
+        let titleIdx = 0;
+        setInterval(() => {
+            document.title = `404 - ${umaNames[titleIdx]} ERROR | Racc Open Stats`;
+            titleIdx = (titleIdx + 1) % umaNames.length;
+        }, 2000);
+    </script>
+</body>
+</html>
