@@ -152,6 +152,71 @@
         }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+        /* --- TIC-TAC-TOE MODAL --- */
+        .ttt-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .ttt-overlay.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .ttt-box {
+            background: var(--card);
+            border: 2px solid var(--accent);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 0 60px rgba(78,204,163,0.2);
+        }
+        .ttt-box h2 { margin: 0 0 6px; font-size: 1.3rem; color: var(--text); }
+        .ttt-status { color: var(--accent); font-weight: 600; margin-bottom: 16px; font-size: 0.95rem; }
+        .ttt-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .ttt-cell {
+            aspect-ratio: 1;
+            background: var(--bg);
+            border: 2px solid var(--border-color, #444);
+            border-radius: 12px;
+            font-size: 2.2rem;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            color: var(--accent);
+        }
+        .ttt-cell:hover { border-color: var(--accent); background: rgba(78,204,163,0.08); }
+        .ttt-cell.taken { cursor: default; }
+        .ttt-cell.taken:hover { background: var(--bg); border-color: var(--border-color, #444); }
+        .ttt-cell.x { color: var(--pink); }
+        .ttt-cell.o { color: var(--accent); }
+        .ttt-btn {
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: inherit;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            transition: all 0.2s;
+        }
+        .ttt-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(78,204,163,0.3); }
+        .ttt-quote { font-size: 0.8rem; opacity: 0.5; margin-top: 12px; font-style: italic; }
+
         @media (max-width: 700px) {
             .card { padding: 30px 24px; margin: 16px; }
             .error-code { font-size: 5rem; }
@@ -208,6 +273,177 @@
             document.title = `404 - ${umaNames[titleIdx]} ERROR | Racc Open Stats`;
             titleIdx = (titleIdx + 1) % umaNames.length;
         }, 2000);
+
+        // Tic-Tac-Toe Game with Haru Urara
+        const tttOverlay = document.createElement('div');
+        tttOverlay.className = 'ttt-overlay';
+        tttOverlay.innerHTML = `
+            <div class="ttt-box">
+                <h2>Tic-Tac-Toe vs Haru Urara</h2>
+                <div class="ttt-status">Your turn! You're ❌</div>
+                <div class="ttt-grid" id="ttt-grid"></div>
+                <button class="ttt-btn" id="ttt-reset">Play Again</button>
+                <div class="ttt-quote">"I-I lost again..." — Haru Urara</div>
+            </div>
+        `;
+        document.body.appendChild(tttOverlay);
+
+        const grid = document.getElementById('ttt-grid');
+        const statusEl = tttOverlay.querySelector('.ttt-status');
+        const resetBtn = tttOverlay.querySelector('#ttt-reset');
+        let board = Array(9).fill(null);
+        let gameOver = false;
+        let currentPlayer = 'X';
+
+        function createCell(index) {
+            const cell = document.createElement('div');
+            cell.className = 'ttt-cell';
+            cell.dataset.index = index;
+            return cell;
+        }
+
+        function renderBoard() {
+            grid.innerHTML = '';
+            board.forEach((value, index) => {
+                const cell = createCell(index);
+                if (value) {
+                    cell.textContent = value;
+                    cell.classList.add('taken', value.toLowerCase());
+                }
+                cell.addEventListener('click', handleClick);
+                grid.appendChild(cell);
+            });
+        }
+
+        function handleClick(e) {
+            if (gameOver) return;
+            const index = e.target.dataset.index;
+            if (board[index]) return;
+
+            board[index] = currentPlayer;
+            renderBoard();
+
+            if (checkWin(currentPlayer)) {
+                statusEl.textContent = `You ${currentPlayer === 'X' ? 'won!' : 'lost!'}`;
+                gameOver = true;
+                setTimeout(() => {
+                    tttOverlay.querySelector('.ttt-quote').textContent = 
+                        currentPlayer === 'X' ? 
+                        "I'll get you next time...!" : 
+                        "Haru Urara never loses!";
+                }, 500);
+                return;
+            }
+
+            if (board.every(cell => cell !== null)) {
+                statusEl.textContent = "It's a draw!";
+                gameOver = true;
+                setTimeout(() => {
+                    tttOverlay.querySelector('.ttt-quote').textContent = 
+                        "We're evenly matched!";
+                }, 500);
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusEl.textContent = `Haru Urara's turn...`;
+            
+            setTimeout(aiMove, 500);
+        }
+
+        function aiMove() {
+            if (gameOver) return;
+            
+            // Simple AI: random move, with preference for center then corners
+            const emptyCells = board.map((val, i) => val === null ? i : null).filter(i => i !== null);
+            
+            // Priority: center, then corners, then edges
+            const priority = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+            let move = null;
+            
+            for (const idx of priority) {
+                if (emptyCells.includes(idx)) {
+                    move = idx;
+                    break;
+                }
+            }
+            
+            if (move === null && emptyCells.length > 0) {
+                move = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            }
+
+            if (move !== null) {
+                board[move] = currentPlayer;
+                renderBoard();
+
+                if (checkWin(currentPlayer)) {
+                    statusEl.textContent = `You ${currentPlayer === 'X' ? 'won!' : 'lost!'}`;
+                    gameOver = true;
+                    setTimeout(() => {
+                        tttOverlay.querySelector('.ttt-quote').textContent = 
+                            currentPlayer === 'X' ? 
+                            "I'll get you next time...!" : 
+                            "Haru Urara never loses!";
+                    }, 500);
+                    return;
+                }
+
+                if (board.every(cell => cell !== null)) {
+                    statusEl.textContent = "It's a draw!";
+                    gameOver = true;
+                    setTimeout(() => {
+                        tttOverlay.querySelector('.ttt-quote').textContent = 
+                            "We're evenly matched!";
+                    }, 500);
+                    return;
+                }
+
+                currentPlayer = 'X';
+                statusEl.textContent = `Your turn! You're ❌`;
+            }
+        }
+
+        function checkWin(player) {
+            const winPatterns = [
+                [0,1,2], [3,4,5], [6,7,8], // rows
+                [0,3,6], [1,4,7], [2,5,8], // columns
+                [0,4,8], [2,4,6]           // diagonals
+            ];
+            
+            return winPatterns.some(pattern => 
+                pattern.every(i => board[i] === player)
+            );
+        }
+
+        function resetGame() {
+            board = Array(9).fill(null);
+            gameOver = false;
+            currentPlayer = 'X';
+            statusEl.textContent = `Your turn! You're ❌`;
+            tttOverlay.querySelector('.ttt-quote').textContent = "I-I lost again..." — Haru Urara";
+            renderBoard();
+        }
+
+        // Event listeners
+        resetBtn.addEventListener('click', resetGame);
+        
+        // Open game when clicking Haru Urara's image
+        const haruImg = document.querySelector('.meme-img');
+        if (haruImg) {
+            haruImg.style.cursor = 'pointer';
+            haruImg.title = 'Click to play Tic-Tac-Toe with Haru Urara!';
+            haruImg.addEventListener('click', () => {
+                tttOverlay.classList.add('active');
+                renderBoard();
+            });
+        }
+
+        // Close game when clicking outside the box
+        tttOverlay.addEventListener('click', (e) => {
+            if (e.target === tttOverlay) {
+                tttOverlay.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>
