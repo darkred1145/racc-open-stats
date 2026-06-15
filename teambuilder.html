@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
     <style>
@@ -41,7 +41,7 @@
 
     <div class="controls" style="justify-content: flex-end;">
         <div class="control-group">
-            <label>Theme</label>
+            <label for="themeSelector">Theme</label>
             <div class="select-wrapper">
                 <select id="themeSelector" onchange="switchTheme()">
                 <option value="">Default (Dark)</option>
@@ -66,7 +66,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding: 0 10px;">
                 <h2 style="margin: 0;">TRAINER PRESETS</h2>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <label style="margin: 0;">Target Trainer:</label>
+                    <label for="tcrafTrainerSelector" style="margin: 0;">Target Trainer:</label>
                     <div class="select-wrapper" style="min-width: 200px;">
                         <select id="tcrafTrainerSelector" onchange="generateTheorycraft()"></select>
                     </div>
@@ -89,7 +89,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding: 0 10px;">
                 <h2 style="margin: 0;">CUSTOM TEAM SIMULATOR</h2>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <label style="margin: 0;">Simulate By:</label>
+                    <label for="simTypeSelector" style="margin: 0;">Simulate By:</label>
                     <div class="select-wrapper">
                         <select id="simTypeSelector" onchange="populateSimDropdowns()">
                             <option value="trainer">Trainers</option>

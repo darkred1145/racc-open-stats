@@ -1,4 +1,7 @@
-// --- GLOBAL VARIABLES ---
+// ═══════════════════════════════════════════════════════════════
+//  STATE & CONFIGURATION
+// ═══════════════════════════════════════════════════════════════
+
 const POINTS_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 
 const EMPTY_DATASET = {
@@ -8,10 +11,28 @@ const EMPTY_DATASET = {
     tournamentBans: {}
 };
 
-let currentRawData = [];
-let activeDataset = null;
-let liveFirebaseData = [];
-let currentCalculatedStats = null;
+const AppState = {
+    _rawData: [],
+    _dataset: null,
+    _liveData: [],
+    _stats: null,
+
+    get rawData() { return this._rawData; },
+    set rawData(v) { this._rawData = v; },
+
+    get dataset() { return this._dataset; },
+    set dataset(v) { this._dataset = v; },
+
+    get liveData() { return this._liveData; },
+    set liveData(v) { this._liveData = v; },
+
+    get stats() { return this._stats; },
+    set stats(v) { this._stats = v; }
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  DOM HELPERS
+// ═══════════════════════════════════════════════════════════════
 
 // --- Helper: Generate Icon HTML ---
 function getIconHtml(name, type, outfitName = 'Original') {
@@ -125,9 +146,13 @@ function formatName(fullName, type = 'uma') {
     return `<div class="name-cell">${icon}${mainName}${variantHtml}</div>`;
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  LIVE DATA (FIREBASE)
+// ═══════════════════════════════════════════════════════════════
+
 // --- FIREBASE LIVE DATA LISTENER ---
 window.addEventListener('liveDataReady', (e) => {
-    liveFirebaseData = e.detail; 
+    AppState.liveData = e.detail; 
     renderLiveTournaments();
 });
 
@@ -135,14 +160,14 @@ function renderLiveTournaments() {
     const container = document.getElementById('liveDataOutput');
     if (!container) return;
     
-    if (liveFirebaseData.length === 0) {
+    if (AppState.liveData.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding:20px;">No live tournaments found.</div>`;
         return;
     }
 
     let html = '';
 
-    liveFirebaseData.forEach(t => {
+    AppState.liveData.forEach(t => {
         // Ensure all iterable fields are strictly arrays to prevent Firebase coercion errors
         const tPlayers = Array.isArray(t.players) ? t.players : (t.players ? Object.values(t.players) : []);
         const tRaces = Array.isArray(t.races) ? t.races : (t.races ? Object.values(t.races) : []);
@@ -251,7 +276,7 @@ function renderLiveTournaments() {
 
 // --- Copy to Clipboard Logic ---
 function copyTournamentResults(tournamentId) {
-    const tournament = liveFirebaseData.find(t => t.id === tournamentId);
+    const tournament = AppState.liveData.find(t => t.id === tournamentId);
     if (!tournament) return;
     let text = `${tournament.name}\n\n`;
     
@@ -297,6 +322,10 @@ function copyTournamentResults(tournamentId) {
         });
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  DATA PIPELINE (SEASON SWITCH, FILTER, ACCESS)
+// ═══════════════════════════════════════════════════════════════
+
 // --- SEASON SWITCHER LOGIC ---
 function switchSeason() {
     const seasonEl = document.getElementById('seasonSelector');
@@ -307,11 +336,11 @@ function switchSeason() {
     const s2 = typeof S2_DATA !== 'undefined' ? S2_DATA : EMPTY_DATASET;
 
     if (season === 's1') {
-        activeDataset = s1;
+        AppState.dataset = s1;
     } else if (season === 's2') {
-        activeDataset = s2;
+        AppState.dataset = s2;
     } else if (season === 'all') {
-        activeDataset = {
+        AppState.dataset = {
             compactData: [...(s1.compactData || []), ...(s2.compactData || [])],
             tournamentRaceResults: { ...(s1.tournamentRaceResults || {}), ...(s2.tournamentRaceResults || {}) },
             tournamentWinners: { ...(s1.tournamentWinners || {}), ...(s2.tournamentWinners || {}) },
@@ -319,11 +348,11 @@ function switchSeason() {
         };
     }
 
-    if (activeDataset && activeDataset.compactData) {
+    if (AppState.dataset && AppState.dataset.compactData) {
         const umaToPreload = [];
         const trainerToPreload = [];
 
-        currentRawData = activeDataset.compactData.map(r => {
+        AppState.rawData = AppState.dataset.compactData.map(r => {
             let umaBase = r[1];
             if(umaBase.includes('(')) umaBase = umaBase.split('(')[0].trim();
             umaToPreload.push(umaBase);
@@ -345,26 +374,41 @@ function switchSeason() {
         preloadImages(umaToPreload, 'uma'); 
         preloadImages(trainerToPreload, 'trainer'); 
     } else {
-        currentRawData = [];
+        AppState.rawData = [];
     }
 
     updateData();
     if (document.getElementById('points-table-body')) renderStatsTable();
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  UI CONTROLLERS (TABS, TIER VIEWS, FILTER, THEME)
+// ═══════════════════════════════════════════════════════════════
+
 // --- UI Logic: Tabs ---
 function switchTab(tabId) {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => {
+        el.classList.remove('active');
+        el.setAttribute('aria-selected', 'false');
+    });
     
     const targetSection = document.getElementById(tabId);
     if (targetSection) targetSection.classList.add('active');
 
-    const tabBtn = document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`);
-    if (tabBtn) tabBtn.classList.add('active');
+    const tabBtn = document.querySelector(`.tab[data-tab="${tabId}"]`);
+    if (tabBtn) {
+        tabBtn.classList.add('active');
+        tabBtn.setAttribute('aria-selected', 'true');
+    }
     
     if (tabId === 'theorycrafter' && typeof generateTheorycraft === 'function') generateTheorycraft(); 
 }
+
+document.querySelector('.tabs')?.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (tab) switchTab(tab.dataset.tab);
+});
 
 function setTierView(index) {
     const buttons = document.querySelectorAll('.switch-option');
@@ -386,10 +430,14 @@ function setTierView(index) {
     });
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  STATS ENGINE (COMPUTATION, CLASSIFICATION)
+// ═══════════════════════════════════════════════════════════════
+
 // --- Calculate Points & Beat Rate & Placements ---
 function getChampionshipPoints(activeTournaments, filteredData) {
     let stats = { trainer: {}, uma: {} };
-    if (!activeDataset.tournamentRaceResults) return stats;
+    if (!AppState.dataset.tournamentRaceResults) return stats;
 
     const lookupMap = {};
     filteredData.forEach(row => {
@@ -397,7 +445,7 @@ function getChampionshipPoints(activeTournaments, filteredData) {
         lookupMap[key] = row.UniqueName;
     });
 
-    for (const [tournamentName, stages] of Object.entries(activeDataset.tournamentRaceResults)) {
+    for (const [tournamentName, stages] of Object.entries(AppState.dataset.tournamentRaceResults)) {
         if (!activeTournaments.has(tournamentName)) continue;
 
         for (const [stageName, races] of Object.entries(stages)) {
@@ -470,6 +518,84 @@ function getChampionshipPoints(activeTournaments, filteredData) {
     return stats;
 }
 
+// --- Pure Computation Functions ---
+function computeWinRate(wins, totalRacesRun) {
+    return totalRacesRun > 0 ? (wins / totalRacesRun * 100) : 0;
+}
+
+function computeDominance(beaten, totalOpp) {
+    return totalOpp > 0 ? (beaten / totalOpp * 100) : 0;
+}
+
+function computeAvgRank(positions) {
+    if (!positions || positions.length === 0) return null;
+    return positions.reduce((a, b) => a + b, 0) / positions.length;
+}
+
+function computeVolatility(positions) {
+    if (!positions || positions.length === 0) return null;
+    if (positions.length === 1) return positions[0];
+    const mean = computeAvgRank(positions);
+    const variance = positions.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / positions.length;
+    const stdDev = Math.sqrt(variance);
+    let lower = Math.max(1, Math.round(mean - stdDev));
+    let upper = Math.round(mean + stdDev);
+    return lower === upper ? lower : [lower, upper];
+}
+
+function computePodiumRate(positions) {
+    if (!positions || positions.length === 0) return 0;
+    return (positions.filter(p => p <= 3).length / positions.length) * 100;
+}
+
+function computePickRate(picks, validEntries) {
+    return validEntries > 0 ? (picks / validEntries * 100) : 0;
+}
+
+function computeTruePickRate(picks, validEntries, bannedEntries) {
+    const available = validEntries - bannedEntries;
+    return available > 0 ? (picks / available * 100) : 0;
+}
+
+function computeTourneyWinPct(tourneyWins, total) {
+    return total > 0 ? (tourneyWins / total * 100) : 0;
+}
+
+function computeBanRate(bans, validTourneys) {
+    return validTourneys > 0 ? (bans / validTourneys * 100) : 0;
+}
+
+function computePresenceRate(pickedSet, bannedSet, validTournaments) {
+    const combined = new Set([...pickedSet, ...bannedSet]);
+    return validTournaments > 0 ? (combined.size / validTournaments * 100) : 0;
+}
+
+function findBestTourney(tourneyPoints) {
+    if (!tourneyPoints) return null;
+    let best = null, maxPts = -1;
+    for (const [name, pts] of Object.entries(tourneyPoints)) {
+        if (pts > maxPts) { maxPts = pts; best = name; }
+    }
+    return best;
+}
+
+function getReleaseIndex(umaName) {
+    if (typeof UMA_RELEASE_MAP === 'undefined' || !UMA_RELEASE_MAP[umaName]) return 0;
+    if (typeof TOURNAMENT_ORDER === 'undefined') return 0;
+    const idx = TOURNAMENT_ORDER.indexOf(UMA_RELEASE_MAP[umaName]);
+    return idx === -1 ? 0 : idx;
+}
+
+function countValidTournaments(activeTournaments, releaseIndex) {
+    let count = 0, entries = 0;
+    if (typeof TOURNAMENT_ORDER === 'undefined') { return { count: activeTournaments.size, entries: 0 }; }
+    activeTournaments.forEach(tId => {
+        const tIdx = TOURNAMENT_ORDER.indexOf(tId);
+        if (tIdx === -1 || tIdx >= releaseIndex) { count++; }
+    });
+    return { count, entries };
+}
+
 // --- Core Logic: Statistics Calculation ---
 function calculateStats(filteredData) {
     const umaMap = {};
@@ -494,7 +620,7 @@ function calculateStats(filteredData) {
         umaMap[row.UniqueName].totalRacesRun += row.RacesRun;
         umaMap[row.UniqueName].pickedInTourneys.add(row.RawLength);
 
-        if (activeDataset.tournamentWinners && activeDataset.tournamentWinners[row.RawLength] && activeDataset.tournamentWinners[row.RawLength].includes(row.Trainer)) {
+        if (AppState.dataset.tournamentWinners && AppState.dataset.tournamentWinners[row.RawLength] && AppState.dataset.tournamentWinners[row.RawLength].includes(row.Trainer)) {
             umaMap[row.UniqueName].tourneyWins++;
         }
 
@@ -515,16 +641,16 @@ function calculateStats(filteredData) {
 
     Object.values(trainerMap).forEach(t => {
         t.playedTourneys.forEach(tourneyID => {
-            if (activeDataset.tournamentWinners && activeDataset.tournamentWinners[tourneyID] && activeDataset.tournamentWinners[tourneyID].includes(t.name)) {
+            if (AppState.dataset.tournamentWinners && AppState.dataset.tournamentWinners[tourneyID] && AppState.dataset.tournamentWinners[tourneyID].includes(t.name)) {
                 t.tournamentWins++;
             }
         });
     });
 
-    if (activeDataset.tournamentBans) {
-        Object.keys(activeDataset.tournamentBans).forEach(tourneyID => {
+    if (AppState.dataset.tournamentBans) {
+        Object.keys(AppState.dataset.tournamentBans).forEach(tourneyID => {
             if (activeTournaments.has(tourneyID)) {
-                activeDataset.tournamentBans[tourneyID].forEach(umaName => {
+                AppState.dataset.tournamentBans[tourneyID].forEach(umaName => {
                     if (!umaMap[umaName]) { umaMap[umaName] = { name: umaName, picks: 0, wins: 0, totalRacesRun: 0, tourneyWins: 0, bans: 0, pickedInTourneys: new Set(), bannedInTourneys: new Set() }; }
                     umaMap[umaName].bans++;
                     umaMap[umaName].bannedInTourneys.add(tourneyID);
@@ -533,123 +659,102 @@ function calculateStats(filteredData) {
         });
     }
 
-const formatItem = (item, type) => {
-        const winRateVal = item.totalRacesRun > 0 ? (item.wins / item.totalRacesRun * 100).toFixed(1) : "0.0";
-        let dominanceVal = "0.0";
-        
-        const pStats = type === 'trainer' ? pointsData.trainer[item.name] : pointsData.uma[item.name];
-        let avgPos = "-";
-        let volatility = "-"; 
-        let podiumRateVal = "0.0";
-        let bestTourney = "-";
+const formatRawData = (item) => {
+        const pStats = pointsData.uma[item.name];
+        const releaseIdx = getReleaseIndex(item.name);
+        const tournamentInfo = countValidTournaments(activeTournaments, releaseIdx);
 
-        if (pStats) {
-            if (pStats.totalOpp > 0) dominanceVal = ((pStats.beaten / pStats.totalOpp) * 100).toFixed(1);
-            if (pStats.positions && pStats.positions.length > 0) {
-                
-                const sum = pStats.positions.reduce((a, b) => a + b, 0);
-                const mean = sum / pStats.positions.length;
-                avgPos = mean.toFixed(2);
-
-                const podiums = pStats.positions.filter(pos => pos <= 3).length;
-                podiumRateVal = ((podiums / pStats.positions.length) * 100).toFixed(1);
-
-                if (pStats.positions.length > 1) {
-                    const variance = pStats.positions.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / pStats.positions.length;
-                    const stdDev = Math.sqrt(variance);
-                    
-                    let lowerBound = Math.max(1, Math.round(mean - stdDev));
-                    let upperBound = Math.round(mean + stdDev);
-                    
-                    if (lowerBound === upperBound) {
-                        volatility = `${lowerBound}${getOrdinal(lowerBound)}`;
-                    } else {
-                        volatility = `${lowerBound}${getOrdinal(lowerBound)} - ${upperBound}${getOrdinal(upperBound)}`;
-                    }
-                } else if (pStats.positions.length === 1) {
-                    let pos = pStats.positions[0];
-                    volatility = `${pos}${getOrdinal(pos)}`;
+        let validBanTourneysAfterRelease = 0, validEntriesForUma = 0;
+        if (AppState.dataset.tournamentBans) {
+            Object.keys(AppState.dataset.tournamentBans).forEach(tId => {
+                if (activeTournaments.has(tId)) {
+                    const tIdx = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(tId) : -1;
+                    if (tIdx === -1 || tIdx >= releaseIdx) validBanTourneysAfterRelease++;
                 }
-            }
-            if (pStats.tourneyPoints) {
-                let maxPts = -1;
-                for (const [tName, tPts] of Object.entries(pStats.tourneyPoints)) {
-                    if (tPts > maxPts) { maxPts = tPts; bestTourney = tName; }
-                }
-            }
+            });
         }
 
-        let tWinPct = "0.0";
-        if (type === 'uma') tWinPct = item.picks > 0 ? (item.tourneyWins / item.picks * 100).toFixed(1) : "0.0";
-        else { const tourneyCount = item.playedTourneys.size; tWinPct = tourneyCount > 0 ? (item.tournamentWins / tourneyCount * 100).toFixed(1) : "0.0"; }
+        activeTournaments.forEach(tId => {
+            const tIdx = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(tId) : -1;
+            if (tIdx === -1 || tIdx >= releaseIdx) validEntriesForUma += (tourneyEntryCount[tId] || 0);
+        });
+
+        let bannedEntriesAfterRelease = 0;
+        item.bannedInTourneys.forEach(tId => {
+            const tIdx = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(tId) : -1;
+            if (tIdx === -1 || tIdx >= releaseIdx) bannedEntriesAfterRelease += (tourneyEntryCount[tId] || 0);
+        });
+
+        return {
+            pStats,
+            releaseIdx,
+            validTournamentsForUma: tournamentInfo.count,
+            validEntriesForUma,
+            validBanTourneysAfterRelease,
+            bannedEntriesAfterRelease
+        };
+    };
+
+    const formatRawDataTrainer = (item) => {
+        return { pStats: pointsData.trainer[item.name] };
+    };
+
+    const formatItem = (item, type) => {
+        const raw = type === 'uma' ? formatRawData(item) : formatRawDataTrainer(item);
+        const pStats = raw.pStats;
+
+        const winRate = computeWinRate(item.wins, item.totalRacesRun);
+        const avgPos = pStats ? computeAvgRank(pStats.positions) : null;
+        const podiumRate = pStats ? computePodiumRate(pStats.positions) : 0;
+        const dominance = pStats ? computeDominance(pStats.beaten, pStats.totalOpp) : 0;
+        const tourneyWinPct = type === 'uma'
+            ? computeTourneyWinPct(item.tourneyWins, item.picks)
+            : computeTourneyWinPct(item.tournamentWins, item.playedTourneys.size);
+        const bestTourney = pStats ? findBestTourney(pStats.tourneyPoints) : null;
 
         const stats = {
             ...item,
             displayName: formatName(item.name, type === 'trainer' ? 'trainer' : 'uma'),
-            winRate: winRateVal,
-            podiumRate: podiumRateVal,
-            dom: dominanceVal,
-            avgPos: avgPos,
-            volatility: volatility,
-            bestTourney: bestTourney,
-            tourneyWinPct: tWinPct,
+            winRate: winRate.toFixed(1),
+            podiumRate: podiumRate.toFixed(1),
+            dom: dominance.toFixed(1),
+            avgPos: avgPos !== null ? avgPos.toFixed(2) : "-",
+            volatility: formatVolatility(pStats ? pStats.positions : null),
+            bestTourney: bestTourney || "-",
+            tourneyWinPct: tourneyWinPct.toFixed(1),
             detailedUmaStats: pStats ? pStats.umaStats : {},
             detailedTourneyStats: pStats ? pStats.tourneyStats : {}
         };
 
         if (type === 'uma') {
-            stats.tourneyStatsDisplay = `${tWinPct}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${item.tourneyWins}/${item.picks})</span>`;
-            let releaseIndex = 0;
-            if (typeof UMA_RELEASE_MAP !== 'undefined' && UMA_RELEASE_MAP[item.name]) {
-                releaseIndex = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(UMA_RELEASE_MAP[item.name]) : -1;
-                if (releaseIndex === -1) releaseIndex = 0; 
-            }
+            const wPct = tourneyWinPct.toFixed(1);
+            stats.tourneyStatsDisplay = `${wPct}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${item.tourneyWins}/${item.picks})</span>`;
 
-            let validTournamentsForUma = 0, validEntriesForUma = 0;
-            activeTournaments.forEach(tId => {
-                let tIndex = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(tId) : -1;
-                if (tIndex === -1 || tIndex >= releaseIndex) { validTournamentsForUma++; validEntriesForUma += (tourneyEntryCount[tId] || 0); }
-            });
+            const pickPct = computePickRate(item.picks, raw.validEntriesForUma);
+            stats.pickPct = pickPct.toFixed(1);
 
-            stats.pickPct = validEntriesForUma > 0 ? ((item.picks / validEntriesForUma) * 100).toFixed(1) : "0.0";
+            const banRate = computeBanRate(item.bans, raw.validBanTourneysAfterRelease);
+            stats.banStatsDisplay = `${banRate.toFixed(1)}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${item.bans}/${raw.validBanTourneysAfterRelease})</span>`;
 
-            let validBanTourneysAfterRelease = 0;
-            if (activeDataset.tournamentBans) {
-                Object.keys(activeDataset.tournamentBans).forEach(tId => {
-                    if (activeTournaments.has(tId)) {
-                        let tIndex = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(tId) : -1;
-                        if (tIndex === -1 || tIndex >= releaseIndex) validBanTourneysAfterRelease++;
-                    }
-                });
-            }
-            const banRate = validBanTourneysAfterRelease > 0 ? (item.bans / validBanTourneysAfterRelease * 100).toFixed(1) : "0.0";
-            stats.banStatsDisplay = `${banRate}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${item.bans}/${validBanTourneysAfterRelease})</span>`;
-            
-            const validPresenceSet = new Set();
-            [...item.pickedInTourneys, ...item.bannedInTourneys].forEach(tId => {
-                let tIndex = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(tId) : -1;
-                if (tIndex === -1 || tIndex >= releaseIndex) validPresenceSet.add(tId);
-            });
-            const presenceRate = validTournamentsForUma > 0 ? (validPresenceSet.size / validTournamentsForUma * 100).toFixed(1) : "0.0";
-            stats.presenceDisplay = `${presenceRate}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${validPresenceSet.size}/${validTournamentsForUma})</span>`;
+            const presenceRate = computePresenceRate(item.pickedInTourneys, item.bannedInTourneys, raw.validTournamentsForUma);
+            stats.presenceDisplay = `${presenceRate.toFixed(1)}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${new Set([...item.pickedInTourneys, ...item.bannedInTourneys]).size}/${raw.validTournamentsForUma})</span>`;
 
-            let bannedEntriesAfterRelease = 0;
-            item.bannedInTourneys.forEach(tId => {
-                let tIndex = typeof TOURNAMENT_ORDER !== 'undefined' ? TOURNAMENT_ORDER.indexOf(tId) : -1;
-                if (tIndex === -1 || tIndex >= releaseIndex) bannedEntriesAfterRelease += (tourneyEntryCount[tId] || 0);
-            });
-            const availableEntries = validEntriesForUma - bannedEntriesAfterRelease;
-            stats.truePickPct = availableEntries > 0 ? ((item.picks / availableEntries) * 100).toFixed(1) : "0.0"; 
+            const truePickPct = computeTruePickRate(item.picks, raw.validEntriesForUma, raw.bannedEntriesAfterRelease);
+            stats.truePickPct = truePickPct.toFixed(1);
         }
 
         if (type === 'trainer') {
-            stats.pickPct = totalEntries > 0 ? ((item.entries / totalEntries) * 100).toFixed(1) : "0.0";
-            stats.tourneyStatsDisplay = `${tWinPct}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${item.tournamentWins}/${item.playedTourneys.size})</span>`;
+            const pickPct = computePickRate(item.entries, totalEntries);
+            stats.pickPct = pickPct.toFixed(1);
+
+            const wPct = tourneyWinPct.toFixed(1);
+            stats.tourneyStatsDisplay = `${wPct}% <span style="font-size:0.8em; color:var(--text-color); opacity:0.7;">(${item.tournamentWins}/${item.playedTourneys.size})</span>`;
+
             const historyArr = Object.entries(item.characterHistory).map(([key, val]) => ({ name: key, ...val }));
             historyArr.sort((a, b) => b.picks - a.picks);
             const fav = historyArr[0];
             stats.favorite = fav ? `${formatName(fav.name, 'uma')} <span class="stat-badge">x${fav.picks}</span>` : '-';
-            
+
             historyArr.sort((a, b) => b.wins - a.wins || a.picks - b.picks);
             const best = historyArr[0];
             stats.ace = (best && best.wins > 0) ? `${formatName(best.name, 'uma')} <span class="stat-badge win-badge">★${best.wins}</span>` : '<span style="color:var(--text-color); opacity:0.5;">-</span>';
@@ -658,13 +763,26 @@ const formatItem = (item, type) => {
         return stats;
     };
 
+    function formatVolatility(positions) {
+        if (!positions || positions.length === 0) return "-";
+        const vol = computeVolatility(positions);
+        if (vol === null) return "-";
+        if (Array.isArray(vol)) {
+            return `${vol[0]}${getOrdinal(vol[0])} - ${vol[1]}${getOrdinal(vol[1])}`;
+        }
+        return `${vol}${getOrdinal(vol)}`;
+    }
+
     return {
         umaStats: Object.values(umaMap).map(i => formatItem(i, 'uma')),
         trainerStats: Object.values(trainerMap).map(i => formatItem(i, 'trainer'))
     };
 }
 
-// --- Render Functions ---
+// ═══════════════════════════════════════════════════════════════
+//  RENDERERS (TABLES, TIER LISTS, CHAMPIONSHIP, CSV)
+// ═══════════════════════════════════════════════════════════════
+
 const TABLE_CONFIGS = {
     uma: {
         core: [
@@ -740,34 +858,38 @@ function renderTable(tableId, data, columns) {
     }).join('');
 }
 
+const TIER_CONFIGS = {
+    winRate: [
+        { label: 'S', min: 20 }, { label: 'A', min: 15 }, { label: 'B', min: 10 },
+        { label: 'C', min: 5 }, { label: 'D', min: 1.1 }, { label: 'F', min: 0 }
+    ],
+    tourneyWinPct: [
+        { label: 'S', min: 40 }, { label: 'A', min: 30 }, { label: 'B', min: 20 },
+        { label: 'C', min: 10 }, { label: 'D', min: 0.1 }, { label: 'F', min: 0 }
+    ],
+    dominance: [
+        { label: 'S', min: 65 }, { label: 'A', min: 50 }, { label: 'B', min: 35 },
+        { label: 'C', min: 20 }, { label: 'D', min: 15.1 }, { label: 'F', min: 0 }
+    ]
+};
+
+function classifyTier(val, sortKey) {
+    const config = sortKey === 'winRate' ? TIER_CONFIGS.winRate
+        : sortKey === 'tourneyWinPct' ? TIER_CONFIGS.tourneyWinPct
+        : TIER_CONFIGS.dominance;
+    for (const t of config) {
+        if (val >= t.min) return t.label;
+    }
+    return config[config.length - 1].label;
+}
+
 function renderTierList(containerId, data, countKey, minReq, sortKey) {
     const tiers = { S: [], A: [], B: [], C: [], D: [], F: [] };
 
     data.forEach(item => {
         if (item[countKey] < minReq) return;
         const val = parseFloat(item[sortKey]); 
-        let tier = 'D';
-        
-        if (sortKey === 'winRate') {
-             if (val <= 1.0) tier = 'F';
-             else if (val >= 20.0) tier = 'S'; 
-             else if (val >= 15.0) tier = 'A';
-             else if (val >= 10.0) tier = 'B';
-             else if (val >= 5.0) tier = 'C';
-        } else if (sortKey === 'tourneyWinPct') {
-             if (val <= 0.0) tier = 'F';
-             else if (val >= 40.0) tier = 'S';
-             else if (val >= 30.0) tier = 'A';
-             else if (val >= 20.0) tier = 'B';
-             else if (val >= 10.0) tier = 'C';
-        } else {
-            if (val <= 15.0) tier = 'F';
-            else if (val >= 65.0) tier = 'S'; 
-            else if (val >= 50.0) tier = 'A';
-            else if (val >= 35.0) tier = 'B';
-            else if (val >= 20.0) tier = 'C';
-        }
-        tiers[tier].push(item);
+        tiers[classifyTier(val, sortKey)].push(item);
     });
 
     const container = document.getElementById(containerId);
@@ -790,21 +912,31 @@ function renderTierList(containerId, data, countKey, minReq, sortKey) {
     container.innerHTML = html;
 }
 
+// --- Filter Controller ---
+const FilterReader = {
+    get surface() { return document.getElementById('surfaceFilter')?.value || 'All'; },
+    get length() { return document.getElementById('lengthFilter')?.value || 'All'; },
+    get minEntries() { return document.getElementById('minEntries')?.value || 5; },
+    get searchQuery() { return document.getElementById('searchInput')?.value.toLowerCase() || ''; },
+
+    updateLabel() {
+        const el = document.getElementById('minEntriesVal');
+        if (el) el.textContent = this.minEntries;
+    },
+
+    getView(tableId) {
+        return document.getElementById(tableId)?.value || 'core';
+    }
+};
+
 function updateData() {
-    const surfaceEl = document.getElementById('surfaceFilter');
-    const lengthEl = document.getElementById('lengthFilter');
-    const minEl = document.getElementById('minEntries');
-    const searchEl = document.getElementById('searchInput');
+    const surface = FilterReader.surface;
+    const length = FilterReader.length;
+    const minEntries = FilterReader.minEntries;
+    const searchQuery = FilterReader.searchQuery;
+    FilterReader.updateLabel();
 
-    const surface = surfaceEl ? surfaceEl.value : 'All';
-    const length = lengthEl ? lengthEl.value : 'All';
-    const minEntries = minEl ? minEl.value : 5;
-    const searchQuery = searchEl ? searchEl.value.toLowerCase() : "";
-
-    if(document.getElementById('minEntriesVal')) 
-        document.getElementById('minEntriesVal').textContent = minEntries;
-
-    const filtered = currentRawData.filter(d => {
+    const filtered = AppState.rawData.filter(d => {
         if (d.Trainer === "DQ") return false;
         const surfaceMatch = (surface === 'All' || d.Surface.includes(surface));
         const lengthMatch = (length === 'All' || d.DistanceCategory === length);
@@ -814,18 +946,18 @@ function updateData() {
     });
 
     const stats = calculateStats(filtered);
-    currentCalculatedStats = stats;
+    AppState.stats = stats;
 
     if (document.getElementById('umaTable')) {
-        const umaStatsView = document.getElementById('umaStatsView')?.value || 'core';
+        const view = FilterReader.getView('umaStatsView');
         stats.umaStats.sort((a, b) => b.dom - a.dom);
-        renderTable('umaTable', stats.umaStats, TABLE_CONFIGS.uma[umaStatsView] || TABLE_CONFIGS.uma.core);
+        renderTable('umaTable', stats.umaStats, TABLE_CONFIGS.uma[view] || TABLE_CONFIGS.uma.core);
     }
 
     if (document.getElementById('trainerTable')) {
-        const trainerStatsView = document.getElementById('trainerStatsView')?.value || 'core';
+        const view = FilterReader.getView('trainerStatsView');
         stats.trainerStats.sort((a, b) => b.dom - a.dom);
-        renderTable('trainerTable', stats.trainerStats, TABLE_CONFIGS.trainer[trainerStatsView] || TABLE_CONFIGS.trainer.core);
+        renderTable('trainerTable', stats.trainerStats, TABLE_CONFIGS.trainer[view] || TABLE_CONFIGS.trainer.core);
     }
 
     if (document.getElementById('umaTierListWR')) {
@@ -862,6 +994,9 @@ function sortTable(tableId, colIndex, isNumeric = false) {
         return sortState[key] ? (x < y ? -1 : 1) : (x > y ? -1 : 1);
     });
     tbody.append(...rows);
+
+    const header = document.querySelector(`#${tableId} th:nth-child(${colIndex + 1})`);
+    if (header) header.setAttribute('aria-sort', sortState[key] ? 'ascending' : 'descending');
 }
 
 function switchTheme() {
@@ -875,8 +1010,8 @@ function calculateIndividualStats() {
     const searchEl = document.getElementById('searchInput');
     const searchQuery = searchEl ? searchEl.value.toLowerCase() : "";
     
-    if (activeDataset && activeDataset.tournamentRaceResults) {
-        for (const [tournamentName, stages] of Object.entries(activeDataset.tournamentRaceResults)) {
+    if (AppState.dataset && AppState.dataset.tournamentRaceResults) {
+        for (const [tournamentName, stages] of Object.entries(AppState.dataset.tournamentRaceResults)) {
             for (const [stageName, races] of Object.entries(stages)) {
                 races.forEach((raceResult) => {
                     raceResult.forEach((player, rankIndex) => {
@@ -957,28 +1092,31 @@ function exportCurrentTableToCSV() {
     document.body.removeChild(link);
 }
 
+// --- Shared Utility ---
+function populateSelect(selectId, options, defaultValue, onSelect) {
+    const selector = document.getElementById(selectId);
+    if (!selector) return;
+    const current = selector.value;
+    selector.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
+    if (options.includes(current)) selector.value = current;
+    else if (defaultValue && options.includes(defaultValue)) selector.value = defaultValue;
+    else if (options.length > 0) selector.value = options[0];
+    if (onSelect) onSelect();
+}
+
 // --- TRAINER CARD LOGIC ---
 function populateTrainerDropdown() {
-    const selector = document.getElementById('cardTrainerSelector');
-    if (!selector || !currentCalculatedStats) return;
-
-    const trainers = currentCalculatedStats.trainerStats.map(t => t.name).sort();
-    const currentSelection = selector.value;
-    selector.innerHTML = trainers.map(t => `<option value="${t}">${t}</option>`).join('');
-    
-    if (trainers.includes(currentSelection)) selector.value = currentSelection;
-    else if (trainers.includes("Kenesu")) selector.value = "Kenesu";
-    else if (trainers.length > 0) selector.value = trainers[0];
-    
-    updateTrainerCard();
+    if (!AppState.stats) return;
+    const trainers = AppState.stats.trainerStats.map(t => t.name).sort();
+    populateSelect('cardTrainerSelector', trainers, 'Kenesu', updateTrainerCard);
 }
 
 function updateTrainerCard() {
     const selector = document.getElementById('cardTrainerSelector');
-    if (!selector || !currentCalculatedStats) return;
+    if (!selector || !AppState.stats) return;
 
     const selectedName = selector.value;
-    const tData = currentCalculatedStats.trainerStats.find(t => t.name === selectedName);
+    const tData = AppState.stats.trainerStats.find(t => t.name === selectedName);
     if (!tData) return;
 
     // Head Data
@@ -1107,18 +1245,9 @@ function downloadTierList() {
 
 // --- TEAM THEORYCRAFTER LOGIC ---
 function populateTheorycrafterDropdown() {
-    const selector = document.getElementById('tcrafTrainerSelector');
-    if (!selector || !currentCalculatedStats) return;
-
-    const trainers = currentCalculatedStats.trainerStats.map(t => t.name).sort();
-    const currentSelection = selector.value;
-    selector.innerHTML = trainers.map(t => `<option value="${t}">${t}</option>`).join('');
-    
-    if (trainers.includes(currentSelection)) selector.value = currentSelection;
-    else if (trainers.includes("Kenesu")) selector.value = "Kenesu";
-    else if (trainers.length > 0) selector.value = trainers[0];
-    
-    generateTheorycraft();
+    if (!AppState.stats) return;
+    const trainers = AppState.stats.trainerStats.map(t => t.name).sort();
+    populateSelect('tcrafTrainerSelector', trainers, 'Kenesu', generateTheorycraft);
 }
 
 function getTheorycraftLensWeights(lens) {
@@ -1150,11 +1279,11 @@ function generateTheorycraft() {
     const focusSelector = document.getElementById('tcrafFocusSelector');
     const container = document.getElementById('tcraf-results');
     const summary = document.getElementById('tcraf-summary');
-    if (!selector || !currentCalculatedStats || !container || !summary) return;
+    if (!selector || !AppState.stats || !container || !summary) return;
 
     const selectedName = selector.value;
     const lens = focusSelector ? focusSelector.value : 'balanced';
-    const tData = currentCalculatedStats.trainerStats.find(t => t.name === selectedName);
+    const tData = AppState.stats.trainerStats.find(t => t.name === selectedName);
 
     if (!tData) {
         container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.7;">No data found for this trainer.</div>`;
@@ -1163,7 +1292,7 @@ function generateTheorycraft() {
     }
 
     const historyArr = Object.entries(tData.characterHistory).map(([key, val]) => {
-        const globalUma = currentCalculatedStats.umaStats.find(u => u.name === key);
+        const globalUma = AppState.stats.umaStats.find(u => u.name === key);
         const wr = val.racesRun > 0 ? (val.wins / val.racesRun * 100) : 0;
         return {
             name: key,
@@ -1180,7 +1309,7 @@ function generateTheorycraft() {
     const comfortTeam = [...historyArr].sort((a, b) => b.picks - a.picks || b.theoryScore - a.theoryScore).slice(0, 3);
     const ceilingTeam = [...historyArr].sort((a, b) => (parseFloat(b.trainerWinRate) + parseFloat(b.trainerDom)) - (parseFloat(a.trainerWinRate) + parseFloat(a.trainerDom))).slice(0, 3);
     const signatureTeam = historyArr.slice(0, 3);
-    const metaCounterTeam = [...currentCalculatedStats.umaStats]
+    const metaCounterTeam = [...AppState.stats.umaStats]
         .filter(u => !historyArr.some(h => h.name === u.name))
         .sort((a, b) => (parseFloat(a.pickPct || 0) - parseFloat(b.pickPct || 0)) || (parseFloat(b.dom) - parseFloat(a.dom)))
         .slice(0, 3);
@@ -1253,10 +1382,10 @@ function generateTheorycraft() {
 function populateSimDropdowns() {
     const typeEl = document.getElementById('simTypeSelector');
     const s1 = document.getElementById('simSlot1'), s2 = document.getElementById('simSlot2'), s3 = document.getElementById('simSlot3');
-    if (!typeEl || !s1 || !s2 || !s3 || !currentCalculatedStats) return;
+    if (!typeEl || !s1 || !s2 || !s3 || !AppState.stats) return;
 
     const type = typeEl.value;
-    let options = type === 'trainer' ? currentCalculatedStats.trainerStats.map(t => t.name).sort() : currentCalculatedStats.umaStats.map(u => u.name).sort();
+    let options = type === 'trainer' ? AppState.stats.trainerStats.map(t => t.name).sort() : AppState.stats.umaStats.map(u => u.name).sort();
     const html = `<option value="">-- Select --</option>` + options.map(o => `<option value="${o}">${o}</option>`).join('');
     
     const v1 = s1.value, v2 = s2.value, v3 = s3.value;
@@ -1275,11 +1404,11 @@ function runSimulation() {
     const comparison = document.getElementById('sim-comparison');
     const s1 = document.getElementById('simSlot1'), s2 = document.getElementById('simSlot2'), s3 = document.getElementById('simSlot3');
 
-    if (!typeEl || !container || !comparison || !currentCalculatedStats || !s1) return;
+    if (!typeEl || !container || !comparison || !AppState.stats || !s1) return;
 
     const type = typeEl.value;
     const lens = lensEl ? lensEl.value : 'balanced';
-    const list = type === 'trainer' ? currentCalculatedStats.trainerStats : currentCalculatedStats.umaStats;
+    const list = type === 'trainer' ? AppState.stats.trainerStats : AppState.stats.umaStats;
     const members = [list.find(x => x.name === s1.value), list.find(x => x.name === s2.value), list.find(x => x.name === s3.value)].filter(Boolean);
 
     if (members.length === 0) {

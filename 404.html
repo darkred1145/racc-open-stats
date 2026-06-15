@@ -6,13 +6,14 @@
     <title>404 - UMA ERROR | Racc Open Stats</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #1a1a1d;
-            --card: #2d2d30;
+            --bg: #141416;
+            --card: #232326;
             --accent: #4ecca3;
-            --text: #e0e0e0;
+            --text: #e4e4e7;
+            --display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
             --pink: #f43f5e;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,6 +86,7 @@
             font-size: 1.8rem;
             margin-bottom: 8px;
             color: var(--text);
+            font-family: var(--display);
         }
         .subtitle {
             color: var(--accent);
@@ -125,7 +127,7 @@
             font-size: 0.9rem;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, color 0.2s;
             font-family: inherit;
         }
         .btn-primary {
@@ -194,10 +196,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s;
+            transition: background 0.15s, border-color 0.15s;
             color: var(--accent);
         }
         .ttt-cell:hover { border-color: var(--accent); background: rgba(78,204,163,0.08); }
+        .ttt-cell:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(78,204,163,0.4); }
         .ttt-cell.taken { cursor: default; }
         .ttt-cell.taken:hover { background: var(--bg); border-color: var(--border-color, #444); }
         .ttt-cell.x { color: var(--pink); }
@@ -212,10 +215,14 @@
             background: var(--accent);
             color: var(--bg);
             border: none;
-            transition: all 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         .ttt-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(78,204,163,0.3); }
         .ttt-quote { font-size: 0.8rem; opacity: 0.5; margin-top: 12px; font-style: italic; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+        }
 
         @media (max-width: 700px) {
             .card { padding: 30px 24px; margin: 16px; }
@@ -249,7 +256,7 @@
             Either way, it's <span>UMA</span> here. 🐴
         </div>
 
-        <div class="haru-quote">"I tried my best... but I still lost the page..." — Haru Urara, probably</div>
+        <div class="haru-quote">&ldquo;I tried my best&hellip; but I still lost the page&hellip;&rdquo; &mdash; Haru Urara, probably</div>
 
         <div class="btn-row">
             <a class="btn btn-primary" href="/">🏠 Back to Dashboard</a>
@@ -257,7 +264,7 @@
         </div>
 
         <div class="footer-meme">
-            ERROR_CODE: <span class="random-uma">🐎</span> HORSE_MISSING · Racc Open Stats · "Uma what you're looking for?" © 2025
+            ERROR_CODE: <span class="random-uma">🐎</span> HORSE_MISSING &middot; Racc Open Stats &middot; &ldquo;Uma what you&rsquo;re looking for?&rdquo; <span id="copyrightYear"></span>
         </div>
     </div>
 
@@ -283,10 +290,12 @@
                 <div class="ttt-status">Your turn! You're ❌</div>
                 <div class="ttt-grid" id="ttt-grid"></div>
                 <button class="ttt-btn" id="ttt-reset">Play Again</button>
-                <div class="ttt-quote">"I-I lost again..." — Haru Urara</div>
+                <div class="ttt-quote">\u201cI-I lost again\u2026\u201d \u2014 Haru Urara</div>
             </div>
         `;
         document.body.appendChild(tttOverlay);
+
+        document.getElementById('copyrightYear').textContent = `\u00a9 ${new Date().getFullYear()}`;
 
         const grid = document.getElementById('ttt-grid');
         const statusEl = tttOverlay.querySelector('.ttt-status');
@@ -299,6 +308,14 @@
             const cell = document.createElement('div');
             cell.className = 'ttt-cell';
             cell.dataset.index = index;
+            cell.setAttribute('tabindex', '0');
+            cell.setAttribute('role', 'button');
+            cell.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleClick(e);
+                }
+            });
             return cell;
         }
 
@@ -346,7 +363,7 @@
             }
 
             currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-            statusEl.textContent = `Haru Urara's turn...`;
+                statusEl.textContent = `Haru Urara's turn\u2026`;
             
             setTimeout(aiMove, 500);
         }
@@ -382,7 +399,7 @@
                     setTimeout(() => {
                         tttOverlay.querySelector('.ttt-quote').textContent = 
                             currentPlayer === 'X' ? 
-                            "I'll get you next time...!" : 
+                        "I'll get you next time\u2026!" : 
                             "Haru Urara never loses!";
                     }, 500);
                     return;
@@ -420,7 +437,7 @@
             gameOver = false;
             currentPlayer = 'X';
             statusEl.textContent = `Your turn! You're ❌`;
-            tttOverlay.querySelector('.ttt-quote').textContent = `I-I lost again... — Haru Urara`;
+            tttOverlay.querySelector('.ttt-quote').textContent = `I-I lost again\u2026 \u2014 Haru Urara`;
             renderBoard();
         }
 
